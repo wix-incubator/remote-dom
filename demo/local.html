@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Demo remote DOM</title>
+    <link href="bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <script src="./require.js"></script>
+    <script>
+      requirejs.config({
+    //By default load any module IDs from js/lib
+        paths: {
+          react: './react.min',
+          reactDOM: './react-dom.min',
+          todo: './todo',
+          dbmonster: './dbmonster'
+        }
+      });
+      function bodyLoad() {
+        require(['react', 'reactDOM'], function (React, ReactDOM) {
+          window.self = window;
+          window.React = React;
+          require(['todo'], function () {
+            ReactDOM.render(React.createElement(window.App), document.getElementById('dom-target'));
+          })
+        });
+      }
+
+
+    </script>
+  </head>
+  <body onload="bodyLoad()">
+    <div id="dom-target"></div>
+
+  </body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Demo remote DOM</title>
+    <link href="bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <script src="./require.js"></script>
+    <script>
+      requirejs.config({
+    //By default load any module IDs from js/lib
+        paths: {
+          localDOM: '../dist/local'
+        }
+      });
+      function bodyLoad() {
+        require(['localDOM'], function (localDOM) {
+          console.log('localDOM', localDOM);
+          var worker = new Worker('demo.js');
+          var localQueue = localDOM.createMessageQueue(worker);
+          var container = localDOM.createContainer(localQueue, document.getElementById('dom-target'));
+          console.log(container);
+        });
+      }
+
+
+    </script>
+  </head>
+  <body onload="bodyLoad()">
+    <div id="dom-target"></div>
+
+  </body>
+</html>
