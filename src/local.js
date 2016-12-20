@@ -60,7 +60,7 @@ function generalEventHandler(queueIndex, evtTarget, evtName, ev) {
     evtJSON.extraData[serializeEventVal(queueIndex, node)] = {$value: node.value, type: node.type, checked: node.checked};
   });
 
-  for (field in ev) {
+  for (var field in ev) {
     evtJSON[field] = serializeEventVal(queueIndex, ev[field])
   }
 
@@ -77,7 +77,7 @@ function applyMessages(queueIndex, messages) {
   const elements = elementsByQueue[queueIndex];
   const containers = containersByQueueAndName[queueIndex];
   const events = eventsByQueueAndName[queueIndex];
-  // console.log('applyMessages', queueIndex, messages);
+  console.log('applyMessages', queueIndex, messages);
   messages.forEach(msg => {
     const msgType = msg[0];
     // console.log('applyMessage:', msg);

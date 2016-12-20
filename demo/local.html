@@ -19,8 +19,8 @@
         require(['react', 'reactDOM'], function (React, ReactDOM) {
           window.self = window;
           window.React = React;
-          require(['todo'], function () {
-            ReactDOM.render(React.createElement(window.App), document.getElementById('dom-target'));
+          require(['todo'], function (App) {
+            ReactDOM.render(React.createElement(App), document.getElementById('dom-target'));
           })
         });
       }
