@@ -85,3 +85,13 @@ it('native invocation', () => {
     expect(domContainer.textContent).toBe('hello world');
     expect(nativeInvocationMock).toHaveBeenLastCalledWith(domContainer.firstChild, true);
 });
+
+it('event click', () => {
+    const clickHandler = jest.fn();
+    const statelessComp = (props) => (<span onClick={clickHandler}>hello {props.name}</span>);
+    ReactDOM.render(React.createElement(statelessComp, {name:'world'}), remoteContainer);
+    expect(domContainer.textContent).toBe('hello world');
+    expect(clickHandler).not.toHaveBeenCalled();
+    domContainer.firstChild.click();
+    expect(clickHandler).toHaveBeenCalled();
+});
