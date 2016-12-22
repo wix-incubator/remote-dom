@@ -91,7 +91,9 @@ class MessagesQueue {
 
   setPipe(channel, handler, timerFunction) {
     this.pipe = new Pipe(channel, handler);
-    this.timerFunction = timerFunction || setTimeout;
+    this.timerFunction = timerFunction || ((cb) => {
+          setTimeout(cb, 0);
+      });
     this.schedule();
   }
 

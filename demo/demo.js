@@ -8,14 +8,15 @@ requirejs.config({
     react: './react.min',
     reactDOM: './react-dom.min',
     todo: './todo',
-    dbmonster: './dbmonster'
+    dbmonster: './dbmonster',
+    masonry: './masonry'
   }
 });
 require(['remoteDOM'], function (remoteDOM) {
   self.window = remoteDOM.window;
   self.document = remoteDOM.document;
   remoteDOM.setChannel(self);
-  require(['react', 'reactDOM', 'todo'], function (React, ReactDOM, App) {
+  require(['react', 'reactDOM', 'masonry'], function (React, ReactDOM, App) {
     ReactDOM.render(React.createElement(App), remoteDOM.createContainer())
   });
 })
