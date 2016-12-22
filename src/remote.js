@@ -213,8 +213,8 @@ function createDocumentFragment() {
 function createContainer(name) {
   name = name || Constants.DEFAULT_NAME;
   const res = new RemoteContainer();
-  queue.push([Commands.createContainer, res.$index, name]);
   connectedElementsByIndex[res.$index] = res;
+  queue.push([Commands.createContainer, res.$index, name]);
   return res;
 }
 
@@ -260,8 +260,8 @@ function handleMessagesFromPipe(messages) {
   });
 }
 
-function setChannel(channel) {
-  queue.setPipe(channel, handleMessagesFromPipe);
+function setChannel(channel, timerFunction) {
+  queue.setPipe(channel, handleMessagesFromPipe, timerFunction);
 }
 
 const document = {

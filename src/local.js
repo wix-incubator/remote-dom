@@ -77,7 +77,7 @@ function applyMessages(queueIndex, messages) {
   const elements = elementsByQueue[queueIndex];
   const containers = containersByQueueAndName[queueIndex];
   const events = eventsByQueueAndName[queueIndex];
-  console.log('applyMessages', queueIndex, messages);
+  // console.log('applyMessages', queueIndex, messages);
   messages.forEach(msg => {
     const msgType = msg[0];
     // console.log('applyMessage:', msg);
@@ -148,7 +148,7 @@ function applyMessages(queueIndex, messages) {
   });
 }
 
-function createMessageQueue(channel) {
+function createMessageQueue(channel, timerFunction) {
   if (!win) {
     throw 'Please setWindow before create message queues';
   }
@@ -160,7 +160,7 @@ function createMessageQueue(channel) {
   elementsByQueue[queueIndex][Constants.DOCUMENT] = doc;
   elementsByQueue[queueIndex][Constants.WINDOW] = win;
   eventsByQueueAndName[queueIndex] = {};
-  queue.setPipe(channel, applyMessages.bind(null, queueIndex));
+  queue.setPipe(channel, applyMessages.bind(null, queueIndex), timerFunction);
   return queueIndex;
 }
 

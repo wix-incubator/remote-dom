@@ -17,7 +17,7 @@ const Node = {
   "DOCUMENT_POSITION_CONTAINS": 8,
   "DOCUMENT_POSITION_CONTAINED_BY": 16,
   "DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC": 32
-}
+};
 
 const Commands = {
   createContainer: 'createContainer',
@@ -37,7 +37,7 @@ const Commands = {
   setValue: 'setValue',
   addEventListener: 'addEventListener',
   removeEventListener: 'removeEventListener'
-}
+};
 
 const Constants = {
   REMOTE_DOM: 'REMOTE_DOM',
@@ -46,7 +46,7 @@ const Constants = {
   DEFAULT_NAME: 'DEFAULT_NAME',
   QUEUE_INDEX: 'QUEUE_INDEX',
   NODE_INDEX: 'NODE_INDEX'
-}
+};
 
 let index = 0;
 
@@ -81,19 +81,20 @@ class MessagesQueue {
     this.timer = null;
   }
   push(message) {
-    this.schedule();
     // console.log(message);
     this.queue.push(message);
-  }
-  setPipe(channel, handler) {
     this.schedule();
+  }
+  setPipe(channel, handler, timerFunction) {
     this.pipe = new Pipe(channel, handler);
+    this.timerFunction = timerFunction || setTimeout;
+    this.schedule();
   }
   schedule() {
-    if (this.timer) {
+    if (this.timer || !this.pipe) {
       return;
     }
-    this.timer = setTimeout(this.flushQueue.bind(this), 0);
+    this.timer = this.timerFunction(this.flushQueue.bind(this));
   }
   flushQueue() {
     this.timer = null;
