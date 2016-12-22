@@ -24,6 +24,8 @@ function syncTimeout(cb) {
   cb();
 }
 
+const nativeInvocationMock = jest.fn();
+
 const localQueue = localDOM.createMessageQueue({
   postMessage: function(message) {
     //console.log(message);
@@ -34,7 +36,7 @@ const localQueue = localDOM.createMessageQueue({
   addEventListener: function (msgType, handler) {
     localHandler = handler;
   }
-}, syncTimeout);
+}, syncTimeout, {native: nativeInvocationMock});
 
 remoteDOM.setChannel({
   postMessage: function (message) {
@@ -75,3 +77,11 @@ it('basic react stateless comp', () => {
   expect(domContainer.textContent).toBe('hello world');
 });
 
+it('native invocation', () => {
+    const statelessComp = (props) => (<span ref={(span)=> {
+        span.invokeNative('native', true)
+    }}>hello {props.name}</span>);
+    ReactDOM.render(React.createElement(statelessComp, {name:'world'}), remoteContainer);
+    expect(domContainer.textContent).toBe('hello world');
+    expect(nativeInvocationMock).toHaveBeenLastCalledWith(domContainer.firstChild, true);
+});
