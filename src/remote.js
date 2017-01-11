@@ -113,8 +113,8 @@ class RemoteNode {
     child.host = null;
   }
 
-  addEventListener(evtType, callback) {
-    addEventListener(this.$index, evtType, callback);
+  addEventListener(evtType, callback, capture) {
+    addEventListener(this.$index, evtType, callback, capture);
   }
 
   removeEventListener(evtType, callback) {
@@ -246,13 +246,13 @@ function createContainer(name) {
   return res;
 }
 
-function addEventListener(target, evtName, callback) {
+function addEventListener(target, evtName, callback, capture) {
   index++;
   // console.log('addEventListener', target, evtName);
   eventsByTypeAndTarget[evtName] = eventsByTypeAndTarget[evtName] || {};
   eventsByTypeAndTarget[evtName][target] = eventsByTypeAndTarget[evtName][target] || {};
   eventsByTypeAndTarget[evtName][target][index] = callback;
-  queue.push([Commands.addEventListener, target, evtName, index]);
+  queue.push([Commands.addEventListener, target, evtName, index, capture]);
 }
 
 function removeEventListener(target, evtName, callback) {

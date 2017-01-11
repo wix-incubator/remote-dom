@@ -143,7 +143,7 @@ function applyMessages(queueIndex, messages) {
       const func = generalEventHandler.bind(null, queueIndex, msg[1], msg[2]);
       events[msg[2]] = events[msg[2]] || {};
       events[msg[2]][msg[3]] = func;
-      elements[msg[1]].addEventListener(msg[2], func);
+      elements[msg[1]].addEventListener(msg[2], func, msg[4]);
       break;
       case (Commands.removeEventListener):
       events[msg[2]] = events[msg[2]] || {};
