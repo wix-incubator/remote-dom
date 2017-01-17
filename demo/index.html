@@ -16,7 +16,26 @@
         require(['localDOM'], function (localDOM) {
           console.log('localDOM', localDOM);
           var worker = new Worker('demo.js');
-          var localQueue = localDOM.createMessageQueue(worker);
+          var localQueue = localDOM.createMessageQueue(worker, null, {
+              masonry: (el, cols) => {
+                let colsHeights = Array(cols).fill(0);
+                const children = Array.from(el.children);
+                const columnWidth = el.offsetWidth / cols;
+                const childrenHeights = children.map((child) => child.offsetHeight);
+
+                children.forEach((child, index) => {
+                    if (childrenHeights[index] === 0) {
+                        return;
+                    }
+                    const currentMinHeight = Math.min.apply(null, colsHeights);
+                    const nextColumn = colsHeights.findIndex((h) => h === currentMinHeight);
+                    child.style.top = currentMinHeight + 'px';
+                    child.style.left = (nextColumn * columnWidth) + 'px';
+                    colsHeights[nextColumn] += childrenHeights[index] + 20;
+                });
+                el.style.height = (Math.max.apply(null, colsHeights) + 20) + 'px';
+            }
+          });
           var container = localDOM.createContainer(localQueue, document.getElementById('dom-target'));
           console.log(container);
         });

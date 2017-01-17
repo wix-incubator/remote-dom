@@ -19,7 +19,7 @@ StyleAttributes.forEach((k) => {
       queue.push([Commands.setStyle, this.$index, k, val]);
       this.$values[k] = val;
     },
-    get: function() {
+    get: function () {
       return this.$values[k];
     }
   })
@@ -35,12 +35,15 @@ class RemoteNode {
     this.parentNode = null;
     this.childNodes = [];
   }
+
   get children() {
     return this.childNodes;
   }
+
   get firstChild() {
     return this.childNodes[0];
   }
+
   get nextSibling() {
     if (!this.parentNode) {
       return null;
@@ -51,6 +54,7 @@ class RemoteNode {
     }
     return this.parentNode.childNodes[idx + 1];
   }
+
   get prevSibling() {
     if (!this.parentNode) {
       return null;
@@ -61,11 +65,14 @@ class RemoteNode {
     }
     return this.parentNode.childNodes[idx - 1];
   }
+
   get ownerDocument() {
     return document
   }
+
   set innerHTML(val) {
   }
+
   set host(host) {
     if (Boolean(host) === Boolean(this.$host)) {
       return;
@@ -76,14 +83,18 @@ class RemoteNode {
     } else {
       delete connectedElementsByIndex[this.$index];
     }
-    this.childNodes.forEach((child) => {child.host = host});
+    this.childNodes.forEach((child) => {
+      child.host = host
+    });
   }
+
   appendChild(child) {
     queue.push([Commands.appendChild, this.$index, child.$index]);
     child.parentNode = this;
     this.childNodes.push(child);
     child.host = this.$host;
   }
+
   insertBefore(child, refChild) {
     queue.push([Commands.insertBefore, this.$index, child.$index, refChild ? refChild.$index : null]);
     const idx = refChild ? this.childNodes.indexOf(refChild) : this.childNodes.length;
@@ -92,6 +103,7 @@ class RemoteNode {
     child.host = this.$host;
     return child;
   }
+
   removeChild(child) {
     queue.push([Commands.removeChild, this.$index, child.$index]);
     const idx = this.childNodes.indexOf(child)
@@ -100,24 +112,34 @@ class RemoteNode {
     }
     child.host = null;
   }
-  addEventListener(evtType, callback) {
-    addEventListener(this.$index, evtType, callback);
+
+  addEventListener(evtType, callback, capture) {
+    addEventListener(this.$index, evtType, callback, capture);
   }
+
   removeEventListener(evtType, callback) {
     removeEventListener(this.$index, evtType, callback);
   }
+
   set value(val) {
     this.$value = val;
     queue.push([Commands.setValue, this.$index, val]);
   }
+
   get value() {
     return this.$value;
   }
+
   get textContent() {
     return this.$textContent;
   }
+
   set textContent(val) {
     queue.push([Commands.textContent, this.$index, val]);
+  }
+
+  invokeNative(name, args) {
+    queue.push([Commands.invokeNative, this.$index, name, args]);
   }
 }
 
@@ -150,22 +172,28 @@ class RemoteElement extends RemoteNode {
     this.$style = new RemoteStyle(this.$index);
     this.$attr = {};
   }
+
   get nodeName() {
     return this.tagName;
   }
+
   setAttribute(k, v) {
     queue.push([Commands.setAttribute, this.$index, k, v]);
-    this.$attr[k] = {name:k, value:v};
+    this.$attr[k] = {name: k, value: v};
   }
+
   get style() {
     return this.$style;
   }
+
   set style(val) {
     queue.push([Commands.setStyle, this.$index, val]);
   }
+
   set innerHTML(val) {
     queue.push([Commands.innerHTML, this.$index, val]);
   }
+
   set innerText(val) {
     queue.push([Commands.innerText, this.$index, val]);
   }
@@ -180,7 +208,7 @@ class RemoteContainer extends RemoteElement {
 }
 
 class RemoteFragment extends RemoteNode {
-  constructor(){
+  constructor() {
     super(Node.DOCUMENT_FRAGMENT_NODE);
   }
 }
@@ -213,18 +241,18 @@ function createDocumentFragment() {
 function createContainer(name) {
   name = name || Constants.DEFAULT_NAME;
   const res = new RemoteContainer();
-  queue.push([Commands.createContainer, res.$index, name]);
   connectedElementsByIndex[res.$index] = res;
+  queue.push([Commands.createContainer, res.$index, name]);
   return res;
 }
 
-function addEventListener(target, evtName, callback) {
+function addEventListener(target, evtName, callback, capture) {
   index++;
   // console.log('addEventListener', target, evtName);
   eventsByTypeAndTarget[evtName] = eventsByTypeAndTarget[evtName] || {};
   eventsByTypeAndTarget[evtName][target] = eventsByTypeAndTarget[evtName][target] || {};
   eventsByTypeAndTarget[evtName][target][index] = callback;
-  queue.push([Commands.addEventListener, target, evtName, index]);
+  queue.push([Commands.addEventListener, target, evtName, index, capture]);
 }
 
 function removeEventListener(target, evtName, callback) {
@@ -260,8 +288,8 @@ function handleMessagesFromPipe(messages) {
   });
 }
 
-function setChannel(channel) {
-  queue.setPipe(channel, handleMessagesFromPipe);
+function setChannel(channel, timerFunction) {
+  queue.setPipe(channel, handleMessagesFromPipe, timerFunction);
 }
 
 const document = {
@@ -286,7 +314,7 @@ var window = {
   navigator: {
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.98 Safari/537.36'
   },
-  top: window,
+  top: window
 }
 
 connectedElementsByIndex[Constants.WINDOW] = window;
@@ -294,8 +322,8 @@ connectedElementsByIndex[Constants.DOCUMENT] = document;
 
 
 module.exports = {
-    document,
-    window,
-    createContainer,
-    setChannel
+  document,
+  window,
+  createContainer,
+  setChannel
 }
