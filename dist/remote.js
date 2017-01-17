@@ -141,13 +141,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }, {
 	    key: 'addEventListener',
-	    value: function addEventListener(evtType, callback) {
-	      _addEventListener(this.$index, evtType, callback);
+	    value: function addEventListener(evtType, callback, capture) {
+	      _addEventListener(this.$index, evtType, callback, capture);
 	    }
 	  }, {
 	    key: 'removeEventListener',
 	    value: function removeEventListener(evtType, callback) {
 	      _removeEventListener(this.$index, evtType, callback);
+	    }
+	  }, {
+	    key: 'invokeNative',
+	    value: function invokeNative(name, args) {
+	      queue.push([Commands.invokeNative, this.$index, name, args]);
 	    }
 	  }, {
 	    key: 'children',
@@ -374,18 +379,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	function createContainer(name) {
 	  name = name || Constants.DEFAULT_NAME;
 	  var res = new RemoteContainer();
-	  queue.push([Commands.createContainer, res.$index, name]);
 	  connectedElementsByIndex[res.$index] = res;
+	  queue.push([Commands.createContainer, res.$index, name]);
 	  return res;
 	}
 
-	function _addEventListener(target, evtName, callback) {
+	function _addEventListener(target, evtName, callback, capture) {
 	  index++;
 	  // console.log('addEventListener', target, evtName);
 	  eventsByTypeAndTarget[evtName] = eventsByTypeAndTarget[evtName] || {};
 	  eventsByTypeAndTarget[evtName][target] = eventsByTypeAndTarget[evtName][target] || {};
 	  eventsByTypeAndTarget[evtName][target][index] = callback;
-	  queue.push([Commands.addEventListener, target, evtName, index]);
+	  queue.push([Commands.addEventListener, target, evtName, index, capture]);
 	}
 
 	function _removeEventListener(target, evtName, callback) {
@@ -423,8 +428,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  });
 	}
 
-	function setChannel(channel) {
-	  queue.setPipe(channel, handleMessagesFromPipe);
+	function setChannel(channel, timerFunction) {
+	  queue.setPipe(channel, handleMessagesFromPipe, timerFunction);
 	}
 
 	var document = {
@@ -510,7 +515,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  textContent: 'textContent',
 	  setValue: 'setValue',
 	  addEventListener: 'addEventListener',
-	  removeEventListener: 'removeEventListener'
+	  removeEventListener: 'removeEventListener',
+	  invokeNative: 'invokeNative'
 	};
 
 	var Constants = {
@@ -567,23 +573,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	  _createClass(MessagesQueue, [{
 	    key: "push",
 	    value: function push(message) {
-	      this.schedule();
 	      // console.log(message);
 	      this.queue.push(message);
+	      this.schedule();
 	    }
 	  }, {
 	    key: "setPipe",
-	    value: function setPipe(channel, handler) {
-	      this.schedule();
+	    value: function setPipe(channel, handler, timerFunction) {
 	      this.pipe = new Pipe(channel, handler);
+	      this.timerFunction = timerFunction || function (cb) {
+	        setTimeout(cb, 0);
+	      };
+	      this.schedule();
 	    }
 	  }, {
 	    key: "schedule",
 	    value: function schedule() {
-	      if (this.timer) {
+	      if (this.timer || !this.pipe) {
 	        return;
 	      }
-	      this.timer = setTimeout(this.flushQueue.bind(this), 0);
+	      this.timer = this.timerFunction(this.flushQueue.bind(this));
 	    }
 	  }, {
 	    key: "flushQueue",

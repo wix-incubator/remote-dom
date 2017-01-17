@@ -82,6 +82,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var queuesByIndex = {};
 	var elementsByQueue = {};
 	var eventsByQueueAndName = {};
+	var nativeInvocationsByQueue = {};
 	var win = null;
 	var doc = null;
 
@@ -109,7 +110,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  } else if (val instanceof win.Node) {
 	    if (val[Constants.QUEUE_INDEX] === queueIndex) {
 	      return val[Constants.NODE_INDEX];
-	    };
+	    }
+	    ;
 	  } else if (val instanceof Array) {
 	    return val.map(function (v) {
 	      return serializeEventVal(queueIndex, v);
@@ -132,10 +134,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return x;
 	  });
 	  path.forEach(function (node) {
-	    evtJSON.extraData[serializeEventVal(queueIndex, node)] = { $value: node.value, type: node.type, checked: node.checked };
+	    evtJSON.extraData[serializeEventVal(queueIndex, node)] = {
+	      $value: node.value,
+	      type: node.type,
+	      checked: node.checked
+	    };
 	  });
 
-	  for (field in ev) {
+	  for (var field in ev) {
 	    evtJSON[field] = serializeEventVal(queueIndex, ev[field]);
 	  }
 
@@ -150,6 +156,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var elements = elementsByQueue[queueIndex];
 	  var containers = containersByQueueAndName[queueIndex];
 	  var events = eventsByQueueAndName[queueIndex];
+	  var nativeInvocations = nativeInvocationsByQueue[queueIndex];
 	  // console.log('applyMessages', queueIndex, messages);
 	  messages.forEach(function (msg) {
 	    var msgType = msg[0];
@@ -210,18 +217,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var func = generalEventHandler.bind(null, queueIndex, msg[1], msg[2]);
 	        events[msg[2]] = events[msg[2]] || {};
 	        events[msg[2]][msg[3]] = func;
-	        elements[msg[1]].addEventListener(msg[2], func);
+	        elements[msg[1]].addEventListener(msg[2], func, msg[4]);
 	        break;
 	      case Commands.removeEventListener:
 	        events[msg[2]] = events[msg[2]] || {};
 	        var origFunc = events[msg[2]][msg[3]];
 	        elements[msg[1]].removeEventListener(msg[2], origFunc);
 	        break;
+	      case Commands.invokeNative:
+	        if (nativeInvocations[msg[2]]) {
+	          nativeInvocations[msg[2]](elements[msg[1]], msg[3]);
+	        }
+	        break;
 	    }
 	  });
 	}
 
-	function createMessageQueue(channel) {
+	function createMessageQueue(channel, timerFunction, nativeInvocations) {
 	  if (!win) {
 	    throw 'Please setWindow before create message queues';
 	  }
@@ -230,10 +242,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	  queuesByIndex[queueIndex] = queue;
 	  containersByQueueAndName[queueIndex] = {};
 	  elementsByQueue[queueIndex] = {};
+	  nativeInvocationsByQueue[queueIndex] = nativeInvocations || {};
 	  elementsByQueue[queueIndex][Constants.DOCUMENT] = doc;
 	  elementsByQueue[queueIndex][Constants.WINDOW] = win;
 	  eventsByQueueAndName[queueIndex] = {};
-	  queue.setPipe(channel, applyMessages.bind(null, queueIndex));
+	  queue.setPipe(channel, applyMessages.bind(null, queueIndex), timerFunction);
 	  return queueIndex;
 	}
 
@@ -291,7 +304,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  textContent: 'textContent',
 	  setValue: 'setValue',
 	  addEventListener: 'addEventListener',
-	  removeEventListener: 'removeEventListener'
+	  removeEventListener: 'removeEventListener',
+	  invokeNative: 'invokeNative'
 	};
 
 	var Constants = {
@@ -348,23 +362,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	  _createClass(MessagesQueue, [{
 	    key: "push",
 	    value: function push(message) {
-	      this.schedule();
 	      // console.log(message);
 	      this.queue.push(message);
+	      this.schedule();
 	    }
 	  }, {
 	    key: "setPipe",
-	    value: function setPipe(channel, handler) {
-	      this.schedule();
+	    value: function setPipe(channel, handler, timerFunction) {
 	      this.pipe = new Pipe(channel, handler);
+	      this.timerFunction = timerFunction || function (cb) {
+	        setTimeout(cb, 0);
+	      };
+	      this.schedule();
 	    }
 	  }, {
 	    key: "schedule",
 	    value: function schedule() {
-	      if (this.timer) {
+	      if (this.timer || !this.pipe) {
 	        return;
 	      }
-	      this.timer = setTimeout(this.flushQueue.bind(this), 0);
+	      this.timer = this.timerFunction(this.flushQueue.bind(this));
 	    }
 	  }, {
 	    key: "flushQueue",
