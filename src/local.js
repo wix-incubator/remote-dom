@@ -1,5 +1,4 @@
-const {Node, Commands, Constants, MessagesQueue, EventAttributes, EventDOMNodeAttributes, Pipe} = require('./common');
-// import {Node, Commands, Constants, MessagesQueue, EventAttributes, Pipe}  from './common'
+import {Node, Commands, Constants, MessagesQueue, EventAttributes, EventDOMNodeAttributes, Pipe}  from './common'
 class LocalContainer {
   constructor(queueIndex, domElement, name) {
     this.domElement = domElement;
