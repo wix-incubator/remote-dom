@@ -1,17 +1,16 @@
 module.exports = {
   entry: {
-    local: './src/local.js',
-    remote: './src/remote.js'
+    demo: './src/index.js'
   },
+  devtool: 'source-map',
   output: {
     path: './dist',
-    filename: "[name].js",
+    filename: "[name]-bundle.js",
     libraryTarget: 'umd',
-    library: 'semiNative'
   },
   module: {
     loaders: [ {test: /\.js$/,
-      exclude: /(node_modules|bower_components)/,
+      exclude: /(node_modules)/,
       loader: 'babel-loader',
       query: {
         presets: ['es2015']
