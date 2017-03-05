@@ -1,11 +1,8 @@
 module.exports = {
-  entry: {
-    local: './src/local.js',
-    remote: './src/remote.js'
-  },
+  entry: './src/index.js',
   output: {
     path: './dist',
-    filename: "[name].js",
+    filename: "bundle.js",
     libraryTarget: 'umd',
   },
   module: {
