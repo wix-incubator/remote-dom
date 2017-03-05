@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/wix/remote-dom.svg?branch=master)](https://travis-ci.org/wix/remote-dom)
+
 # remote-dom AKA Virtual Virtual DOM
 
 #LocalDOM
