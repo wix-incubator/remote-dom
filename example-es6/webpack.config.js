@@ -1,3 +1,6 @@
+const webpack = require('webpack')
+const path = require('path')
+
 module.exports = {
   entry: {
     demo: './src/index.js'
@@ -16,5 +19,16 @@ module.exports = {
         presets: ['es2015']
       }}
     ]
-  }
+  },
+  resolve: {
+    alias: {
+      'remoteDOM': path.resolve(__dirname, '../dist/remote.js')
+    }
+  },
+  plugins: [
+    new webpack.ProvidePlugin({
+        "window": ["remoteDOM", "window"],
+        "document": ["remoteDOM", "document"]
+    })
+  ]
 };

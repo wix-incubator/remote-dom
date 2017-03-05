@@ -1,5 +1,4 @@
 import {Node, Commands, Constants, MessagesQueue, EventAttributes, EventDOMNodeAttributes, Pipe}  from './common'
-import _ from 'lodash'
 
 class LocalContainer {
   constructor(queueIndex, domElement, name) {

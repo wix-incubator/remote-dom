@@ -114,6 +114,10 @@ class RemoteNode {
     child.host = null;
   }
 
+  removeAttribute () {
+    console.log('hererererer')
+  }
+
   addEventListener(evtType, callback, capture) {
     addEventListener(this.$index, evtType, callback, capture);
   }

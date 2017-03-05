@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import remoteDOM from '../../../src/remote'
+import remoteDOM from 'remoteDOM'
 import App from './app'
 
 self.window = remoteDOM.window
