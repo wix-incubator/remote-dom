@@ -183,6 +183,11 @@ class RemoteElement extends RemoteNode {
     this.$attr[k] = {name: k, value: v};
   }
 
+  removeAttribute(k) {
+    queue.push([Commands.removeAttribute, this.$index, k]);
+    delete this.$attr[k];
+  }
+
   get style() {
     return this.$style;
   }

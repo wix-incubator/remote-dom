@@ -29,6 +29,7 @@ const Commands = {
   insertBefore: 'insertBefore',
   removeChild: 'removeChild',
   setAttribute: 'setAttribute',
+  removeAttribute: 'removeAttribute',
   setStyles: 'setStyles',
   setStyle: 'setStyle',
   innerHTML: 'innerHTML',
