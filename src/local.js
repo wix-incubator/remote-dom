@@ -120,6 +120,9 @@ function applyMessages(queueIndex, messages) {
       case (Commands.setAttribute):
       elements[msg[1]].setAttribute(msg[2], msg[3]);
       break;
+      case (Commands.removeAttribute):
+      elements[msg[1]].removeAttribute(msg[2]);
+      break;
       case (Commands.setStyles):
       elements[msg[1]].style = msg[2];
       break;
