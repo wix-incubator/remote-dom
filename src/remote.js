@@ -114,6 +114,17 @@ class RemoteNode {
     child.host = null;
   }
 
+  replaceChild(newChild, oldChild) {
+    queue.push([Commands.replaceChild, this.$index, newChild.$index, oldChild.$index]);
+    const idx = this.childNodes.indexOf(oldChild)
+    if (idx !== -1) {
+      this.childNodes.splice(idx, 1, newChild);
+    }
+    newChild.parentNode = this;
+    newChild.host = this.$host;
+    oldChild.host = null;
+  }
+
   addEventListener(evtType, callback, capture) {
     addEventListener(this.$index, evtType, callback, capture);
   }
@@ -181,6 +192,7 @@ class RemoteElement extends RemoteNode {
   setAttribute(k, v) {
     queue.push([Commands.setAttribute, this.$index, k, v]);
     this.$attr[k] = {name: k, value: v};
+    this[k] = v;
   }
 
   removeAttribute(k) {

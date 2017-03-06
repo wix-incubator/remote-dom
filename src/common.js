@@ -28,6 +28,7 @@ const Commands = {
   appendChild: 'appendChild',
   insertBefore: 'insertBefore',
   removeChild: 'removeChild',
+  replaceChild: 'replaceChild',
   setAttribute: 'setAttribute',
   removeAttribute: 'removeAttribute',
   setStyles: 'setStyles',

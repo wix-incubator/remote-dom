@@ -6,11 +6,12 @@
   "scripts": {
     "demo": "node node_modules/http-server/bin/http-server -c-1",
     "test": "node node_modules/jest/bin/jest.js",
+    "coverage": "node node_modules/jest/bin/jest.js --coverage",
     "build": "node ./node_modules/webpack/bin/webpack.js && echo 'BUILD OK'"
   },
   "author": {"name": "Avi Marcus", "email": "avim@wix.com"},
   "contributors": [
-    {"name": "Lior Shefer", "email": "liorshe@wix.com"},
+    {"name": "Lior Shefer", "email": "lior.shefer@wix.com"},
     {"name": "Shimi Liderman", "email": "shimil@wix.com"}
   ],
   "license": "MIT",

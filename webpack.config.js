@@ -4,6 +4,7 @@ module.exports = {
     path: './dist',
     filename: "bundle.js",
     libraryTarget: 'umd',
+    library: 'remoteDom'
   },
   module: {
     loaders: [ {test: /\.js$/,

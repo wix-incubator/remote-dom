@@ -101,12 +101,20 @@ it('event click', () => {
     expect(clickHandler).not.toHaveBeenCalled();
     domContainer.firstChild.click();
     expect(clickHandler).toHaveBeenCalled();
-});
+})
 
 it('node removeAttribute', () => {
-  const statelessComp = (props) => (<span style={{width: props.width}}>hello {props.name}</span>);
-  ReactDOM.render(React.createElement(statelessComp, {width:'200px'}), remoteContainer)
-  expect(domContainer.firstChild.attributes[1].value).toBe('width: 200px;')
-  remoteContainer.firstChild.removeAttribute('style')
-  expect(domContainer.firstChild.attributes[1]).toBeUndefined()
-});
+    const statelessComp = (props) => (<span style={{width: props.width}}>hello {props.name}</span>)
+    ReactDOM.render(React.createElement(statelessComp, {width:'200px'}), remoteContainer)
+    expect(domContainer.firstChild.attributes[1].value).toBe('width: 200px;')
+    remoteContainer.firstChild.removeAttribute('style')
+    expect(domContainer.firstChild.attributes[1]).toBeUndefined()
+})
+
+it('node replaceChild', () => {
+    const statelessComp = (props) => (<div><span>hello span 1</span><span>hello span 2</span></div>)
+    ReactDOM.render(React.createElement(statelessComp), remoteContainer)
+    const children = remoteContainer.children[0].children
+    remoteContainer.children[0].replaceChild(children[1], children[0])
+    expect(domContainer.textContent).toBe('hello span 2')
+})
