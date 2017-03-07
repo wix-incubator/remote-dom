@@ -2,7 +2,7 @@ importScripts(['require.js']);
 requirejs.config({
 //By default load any module IDs from js/lib
   paths: {
-    remoteDOM: '../dist/remote',
+    RemoteDOM: '../dist/bundle',
     // react: './react.min',
     // reactDOM: './react-dom.min'
     react: './react.min',
@@ -12,7 +12,8 @@ requirejs.config({
     masonry: './masonry'
   }
 });
-require(['remoteDOM'], function (remoteDOM) {
+require(['RemoteDOM'], function (RemoteDOM) {
+  var remoteDOM = RemoteDOM.remote;
   self.window = remoteDOM.window;
   self.document = remoteDOM.document;
   remoteDOM.setChannel(self);
