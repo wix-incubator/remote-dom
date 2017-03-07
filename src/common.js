@@ -39,7 +39,9 @@ const Commands = {
   setValue: 'setValue',
   addEventListener: 'addEventListener',
   removeEventListener: 'removeEventListener',
-  invokeNative: 'invokeNative'
+  invokeNative: 'invokeNative',
+  updateProperties: 'updateProperties',
+  initiated: 'initiated'
 };
 
 const Constants = {
@@ -108,7 +110,7 @@ class MessagesQueue {
 
   flushQueue() {
     this.timer = null;
-    if (!this.pipe) {
+    if (!this.pipe || !this.queue.length) {
       return;
     }
     this.pipe.postMessage(this.queue);

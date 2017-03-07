@@ -300,14 +300,21 @@ function handleMessagesFromPipe(messages) {
     });
     // console.log(evtJSON);
 
-    Object.keys(eventsByTypeAndTarget[evtName][evtTarget]).forEach((callbackIndex) => {
-      eventsByTypeAndTarget[evtName][evtTarget][callbackIndex](evtJSON);
-    })
+    if (eventsByTypeAndTarget[evtName] && eventsByTypeAndTarget[evtName][evtTarget]) {
+      Object.keys(eventsByTypeAndTarget[evtName][evtTarget]).forEach((callbackIndex) => {
+        eventsByTypeAndTarget[evtName][evtTarget][callbackIndex](evtJSON);
+      })
+    }
   });
 }
 
 function setChannel(channel, timerFunction) {
   queue.setPipe(channel, handleMessagesFromPipe, timerFunction);
+  onInit();
+}
+
+function onInit() {
+  queue.push([Commands.initiated]);
 }
 
 const document = {

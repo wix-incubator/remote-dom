@@ -15,7 +15,8 @@ const jsdomDefaultView = jsdom.jsdom({
         ProcessExternalResources: false
     }
 }).defaultView;
-
+jsdomDefaultView.window.screen.width = 100;
+jsdomDefaultView.window.screen.height = 200;
 localDOM.setWindow(jsdomDefaultView.window)
 
 let localHandler = null;
@@ -26,34 +27,44 @@ function syncTimeout(cb) {
 
 const nativeInvocationMock = jest.fn();
 
-const localQueue = localDOM.createMessageQueue({
-  postMessage: function(message) {
-    //console.log(message);
+const localChannel = {
+  postMessage: jest.fn(function(message) {
     if (remoteHandler) {
       remoteHandler({data: message});
     }
-  },
-  addEventListener: function (msgType, handler) {
+  }),
+  addEventListener: jest.fn(function (msgType, handler) {
     localHandler = handler;
-  }
-}, syncTimeout, {native: nativeInvocationMock});
-
-remoteDOM.setChannel({
-  postMessage: function (message) {
-    //console.log(message);
-    if (localHandler) {
-      localHandler({data: message});
-    }
-  },
-  addEventListener: function(msgType, handler) {
-    remoteHandler = handler;
-  }
-}, syncTimeout);
+  })
+};
+const localQueue = localDOM.createMessageQueue(localChannel, syncTimeout, {native: nativeInvocationMock});
 
 let domContainer,remoteContainer, localContainer;
 let counter = 0;
 
+function createPostMessage (messages) {
+  return JSON.stringify({REMOTE_DOM: messages});
+}
+
+function createSingleMessage(target, command, data) {
+  return [target, command, data];
+}
+
+let remoteChannel;
+
 beforeEach(() => {
+  remoteChannel = {
+    postMessage: jest.fn(function (message) {
+      if (localHandler) {
+        localHandler({data: message});
+      }
+    }),
+    addEventListener: jest.fn(function(msgType, handler) {
+      remoteHandler = handler;
+    })
+  };
+  remoteDOM.setChannel(remoteChannel, syncTimeout);
+
   domContainer = jsdomDefaultView.document.createElement('div');
   const id = 'container_' + counter++;
   jsdomDefaultView.document.body.appendChild(domContainer);
@@ -118,3 +129,23 @@ it('node replaceChild', () => {
     remoteContainer.children[0].replaceChild(children[1], children[0])
     expect(domContainer.textContent).toBe('hello span 2')
 })
+
+describe('initialization', () => {
+  it('should notify local when remote channel is set', () => {
+    expect(remoteChannel.postMessage.mock.calls[0][0]).toEqual(createPostMessage([['initiated']]));
+  });
+
+  it('should update window properties at remote side when local gets the remote initiated message', () => {
+    const windowData = {
+      screen: {
+        width: 100,
+        height: 200
+      }
+    };
+    const updatePropertiesMessage = createSingleMessage('WINDOW', 'updateProperties', {
+      extraData: {
+        WINDOW: windowData
+      }});
+    expect(localChannel.postMessage.mock.calls[0][0]).toEqual(createPostMessage([updatePropertiesMessage]));
+  });
+});
