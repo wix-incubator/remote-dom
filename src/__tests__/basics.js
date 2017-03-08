@@ -18,6 +18,11 @@ const jsdomDefaultView = jsdom.jsdom({
 jsdomDefaultView.window.screen.width = 100;
 jsdomDefaultView.window.screen.height = 200;
 jsdomDefaultView.window.devicePixelRatio = 2;
+jsdomDefaultView.window.screen.orientation = {
+  type: 'test-type',
+  angle: 0,
+  shouldNotTakeThisProp: 100
+};
 localDOM.setWindow(jsdomDefaultView.window)
 
 let localHandler = null;
@@ -140,7 +145,11 @@ describe('initialization', () => {
     const windowData = {
       screen: {
         width: 100,
-        height: 200
+        height: 200,
+        orientation: {
+          angle: 0,
+          type: 'test-type'
+        }
       },
       devicePixelRatio: 2
     };

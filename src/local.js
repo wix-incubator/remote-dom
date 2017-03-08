@@ -179,7 +179,11 @@ function updateRemoteOnInit(queueIndex) {
           width: win.screen.width,
           height: win.screen.height,
           deviceXDPI: win.screen.deviceXDPI,
-          logicalXDPI: win.screen.logicalXDPI
+          logicalXDPI: win.screen.logicalXDPI,
+          orientation: {
+            angle: win.screen.orientation && win.screen.orientation.angle,
+            type: win.screen.orientation && win.screen.orientation.type
+          }
         },
         devicePixelRatio: win.devicePixelRatio,
       }
