@@ -177,8 +177,11 @@ function updateRemoteOnInit(queueIndex) {
       WINDOW: {
         screen: {
           width: win.screen.width,
-          height: win.screen.height
-        }
+          height: win.screen.height,
+          deviceXDPI: win.screen.deviceXDPI,
+          logicalXDPI: win.screen.logicalXDPI
+        },
+        devicePixelRatio: win.devicePixelRatio,
       }
     }
   }]);
