@@ -3,11 +3,22 @@ const ReactDOM = require('react-dom');
 const remoteDOM = require('../remote');
 const localDOM = require('../local');
 
-global.document = remoteDOM.document;
-global.window = remoteDOM.window;
-global.navigator = {userAgent: 'Chrome'};
+// global.document = remoteDOM.document;
+// global.window = remoteDOM.window;
+// global.navigator = {userAgent: 'Chrome'};
 console.debug = console.log.bind(console);
 
+const windowData = {
+  screen: {
+    width: 100,
+    height: 200,
+    orientation: {
+      angle: 0,
+      type: 'test-type'
+    }
+  },
+  devicePixelRatio: 2
+};
 const jsdom = require('jsdom');
 const jsdomDefaultView = jsdom.jsdom({
     features: {
@@ -15,12 +26,12 @@ const jsdomDefaultView = jsdom.jsdom({
         ProcessExternalResources: false
     }
 }).defaultView;
-jsdomDefaultView.window.screen.width = 100;
-jsdomDefaultView.window.screen.height = 200;
-jsdomDefaultView.window.devicePixelRatio = 2;
+jsdomDefaultView.window.screen.width = windowData.screen.width;
+jsdomDefaultView.window.screen.height = windowData.screen.height;
+jsdomDefaultView.window.devicePixelRatio = windowData.devicePixelRatio;
 jsdomDefaultView.window.screen.orientation = {
-  type: 'test-type',
-  angle: 0,
+  angle: windowData.screen.orientation.angle,
+  type: windowData.screen.orientation.type,
   shouldNotTakeThisProp: 100
 };
 localDOM.setWindow(jsdomDefaultView.window)
@@ -141,22 +152,15 @@ describe('initialization', () => {
     expect(remoteChannel.postMessage.mock.calls[0][0]).toEqual(createPostMessage([['initiated']]));
   });
 
-  it('should update window properties at remote side when local gets the remote initiated message', () => {
-    const windowData = {
-      screen: {
-        width: 100,
-        height: 200,
-        orientation: {
-          angle: 0,
-          type: 'test-type'
-        }
-      },
-      devicePixelRatio: 2
-    };
+  it('should send an "updateProperties" message to remote when local gets the remote initiated message', () => {
     const updatePropertiesMessage = createSingleMessage('WINDOW', 'updateProperties', {
       extraData: {
         WINDOW: windowData
       }});
     expect(localChannel.postMessage.mock.calls[0][0]).toEqual(createPostMessage([updatePropertiesMessage]));
+  });
+
+  it('should update window properties on remote side when it gets an updateProperties message', function() {
+    expect(remoteDOM.window).toMatchObject(windowData);
   });
 });
