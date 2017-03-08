@@ -17,6 +17,7 @@ const jsdomDefaultView = jsdom.jsdom({
 }).defaultView;
 jsdomDefaultView.window.screen.width = 100;
 jsdomDefaultView.window.screen.height = 200;
+jsdomDefaultView.window.devicePixelRatio = 2;
 localDOM.setWindow(jsdomDefaultView.window)
 
 let localHandler = null;
@@ -140,7 +141,8 @@ describe('initialization', () => {
       screen: {
         width: 100,
         height: 200
-      }
+      },
+      devicePixelRatio: 2
     };
     const updatePropertiesMessage = createSingleMessage('WINDOW', 'updateProperties', {
       extraData: {
