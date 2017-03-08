@@ -1,3 +1,5 @@
+const React = require('react');
+const ReactDOM = require('react-dom');
 const remoteDOM = require('../remote');
 const localDOM = require('../local');
 
@@ -6,9 +8,6 @@ global.window = remoteDOM.window;
 global.navigator = {userAgent: 'Chrome'};
 console.debug = console.log.bind(console);
 
-const React = require('react');
-const ReactDOM = require('react-dom');
-
 const jsdom = require('jsdom');
 const jsdomDefaultView = jsdom.jsdom({
     features: {
@@ -16,6 +15,7 @@ const jsdomDefaultView = jsdom.jsdom({
         ProcessExternalResources: false
     }
 }).defaultView;
+
 localDOM.setWindow(jsdomDefaultView.window)
 
 let localHandler = null;
@@ -77,6 +77,13 @@ it('basic react stateless comp', () => {
   expect(domContainer.textContent).toBe('hello world');
 });
 
+
+it('dangerouslySetInnerHTML prop', () => {
+  const statelessComp = (props) => (<span dangerouslySetInnerHTML={{__html: props.name}}></span>);
+  ReactDOM.render(React.createElement(statelessComp, {name:'hello world'}), remoteContainer);
+  expect(domContainer.textContent).toBe('hello world');
+});
+
 it('native invocation', () => {
     const statelessComp = (props) => (<span ref={(span)=> {
         span.invokeNative('native', true)
@@ -94,4 +101,20 @@ it('event click', () => {
     expect(clickHandler).not.toHaveBeenCalled();
     domContainer.firstChild.click();
     expect(clickHandler).toHaveBeenCalled();
-});
+})
+
+it('node removeAttribute', () => {
+    const statelessComp = (props) => (<span style={{width: props.width}}>hello {props.name}</span>)
+    ReactDOM.render(React.createElement(statelessComp, {width:'200px'}), remoteContainer)
+    expect(domContainer.firstChild.attributes[1].value).toBe('width: 200px;')
+    remoteContainer.firstChild.removeAttribute('style')
+    expect(domContainer.firstChild.attributes[1]).toBeUndefined()
+})
+
+it('node replaceChild', () => {
+    const statelessComp = (props) => (<div><span>hello span 1</span><span>hello span 2</span></div>)
+    ReactDOM.render(React.createElement(statelessComp), remoteContainer)
+    const children = remoteContainer.children[0].children
+    remoteContainer.children[0].replaceChild(children[1], children[0])
+    expect(domContainer.textContent).toBe('hello span 2')
+})

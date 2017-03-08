@@ -86,7 +86,7 @@ function applyMessages(queueIndex, messages) {
   // console.log('applyMessages', queueIndex, messages);
   messages.forEach(msg => {
     const msgType = msg[0];
-    // console.log('applyMessage:', msg);
+    //console.log('applyMessage:', msg);
     switch (msgType) {
       case (Commands.createContainer):
       if (elements[2]) {
@@ -123,8 +123,14 @@ function applyMessages(queueIndex, messages) {
       case (Commands.removeChild):
       elements[msg[1]].removeChild(elements[msg[2]]);
       break;
+        case (Commands.replaceChild):
+          elements[msg[1]].replaceChild(elements[msg[2]], elements[msg[3]]);
+        break;
       case (Commands.setAttribute):
       elements[msg[1]].setAttribute(msg[2], msg[3]);
+      break;
+      case (Commands.removeAttribute):
+      elements[msg[1]].removeAttribute(msg[2]);
       break;
       case (Commands.setStyles):
       elements[msg[1]].style = msg[2];

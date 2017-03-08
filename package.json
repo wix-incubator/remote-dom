@@ -2,13 +2,18 @@
   "name": "remote-dom",
   "version": "0.1.0",
   "description": "remote-dom AKA Virtual Virtual DOM",
-  "main": "index.js",
+  "main": "./dist/bundle.js",
   "scripts": {
     "demo": "node node_modules/http-server/bin/http-server -c-1",
     "test": "node node_modules/jest/bin/jest.js",
+    "coverage": "node node_modules/jest/bin/jest.js --coverage",
     "build": "node ./node_modules/webpack/bin/webpack.js && echo 'BUILD OK'"
   },
-  "author": "Avi Marcus",
+  "author": {"name": "Avi Marcus", "email": "avim@wix.com"},
+  "contributors": [
+    {"name": "Lior Shefer", "email": "lior.shefer@wix.com"},
+    {"name": "Shimi Liderman", "email": "shimil@wix.com"}
+  ],
   "license": "MIT",
   "devDependencies": {
     "babel-cli": "^6.18.0",

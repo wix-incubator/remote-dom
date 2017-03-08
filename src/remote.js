@@ -114,8 +114,15 @@ class RemoteNode {
     child.host = null;
   }
 
-  removeAttribute () {
-    console.log('hererererer')
+  replaceChild(newChild, oldChild) {
+    queue.push([Commands.replaceChild, this.$index, newChild.$index, oldChild.$index]);
+    const idx = this.childNodes.indexOf(oldChild)
+    if (idx !== -1) {
+      this.childNodes.splice(idx, 1, newChild);
+    }
+    newChild.parentNode = this;
+    newChild.host = this.$host;
+    oldChild.host = null;
   }
 
   addEventListener(evtType, callback, capture) {
@@ -185,6 +192,12 @@ class RemoteElement extends RemoteNode {
   setAttribute(k, v) {
     queue.push([Commands.setAttribute, this.$index, k, v]);
     this.$attr[k] = {name: k, value: v};
+    this[k] = v;
+  }
+
+  removeAttribute(k) {
+    queue.push([Commands.removeAttribute, this.$index, k]);
+    delete this.$attr[k];
   }
 
   get style() {

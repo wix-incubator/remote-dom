@@ -9,11 +9,12 @@
       requirejs.config({
     //By default load any module IDs from js/lib
         paths: {
-          localDOM: '../dist/local'
+          RemoteDOM: '../dist/bundle'
         }
       });
       function bodyLoad() {
-        require(['localDOM'], function (localDOM) {
+        require(['RemoteDOM'], function (RemoteDOM) {
+          var localDOM = RemoteDOM.local;
           console.log('localDOM', localDOM);
           var worker = new Worker('demo.js');
           var localQueue = localDOM.createMessageQueue(worker, null, {
