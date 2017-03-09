@@ -91,17 +91,32 @@ class RemoteNode {
 
   appendChild(child) {
     queue.push([Commands.appendChild, this.$index, child.$index]);
-    child.parentNode = this;
-    this.childNodes.push(child);
-    child.host = this.$host;
+
+    const childrenToAppend = child.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? child.childNodes : [child];
+    this.childNodes.splice.apply(this.childNodes, [this.childNodes.length, 0].concat(childrenToAppend));
+    childrenToAppend.forEach((childNode) => {
+      childNode.parentNode = this;
+      childNode.host = this.$host;
+    });
+
+    return child;
   }
 
   insertBefore(child, refChild) {
-    queue.push([Commands.insertBefore, this.$index, child.$index, refChild ? refChild.$index : null]);
     const idx = refChild ? this.childNodes.indexOf(refChild) : this.childNodes.length;
-    child.parentNode = this;
-    this.childNodes.splice(idx, 0, child);
-    child.host = this.$host;
+    if (idx === -1) {
+      throw new Error("Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.")
+    }
+
+    queue.push([Commands.insertBefore, this.$index, child.$index, refChild ? refChild.$index : null]);
+
+    const childrenToInsert = child.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? child.childNodes : [child];
+    this.childNodes.splice.apply(this.childNodes, [idx, 0].concat(childrenToInsert));
+    childrenToInsert.forEach((childNode) => {
+      childNode.parentNode = this;
+      childNode.host = this.$host;
+    });
+
     return child;
   }
 
@@ -115,13 +130,20 @@ class RemoteNode {
   }
 
   replaceChild(newChild, oldChild) {
-    queue.push([Commands.replaceChild, this.$index, newChild.$index, oldChild.$index]);
     const idx = this.childNodes.indexOf(oldChild)
-    if (idx !== -1) {
-      this.childNodes.splice(idx, 1, newChild);
+    if (idx === -1) {
+      throw new Error("Failed to execute 'replaceChild' on 'Node': The node to be replaced is not a child of this node.");
     }
-    newChild.parentNode = this;
-    newChild.host = this.$host;
+
+    queue.push([Commands.replaceChild, this.$index, newChild.$index, oldChild.$index]);
+
+    const childrenToInsert = newChild.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? newChild.childNodes : [newChild];
+    this.childNodes.splice.apply(this.childNodes, [idx, 1].concat(childrenToInsert));
+    childrenToInsert.forEach((childNode) => {
+      childNode.parentNode = this;
+      childNode.host = this.$host;
+    });
+    oldChild.parentNode = null;
     oldChild.host = null;
   }
 

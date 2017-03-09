@@ -2,6 +2,7 @@ const React = require('react');
 const ReactDOM = require('react-dom');
 const remoteDOM = require('../remote');
 const localDOM = require('../local');
+const common = require('../common');
 
 // global.document = remoteDOM.document;
 // global.window = remoteDOM.window;
@@ -63,8 +64,20 @@ function createPostMessage (messages) {
   return JSON.stringify({REMOTE_DOM: messages});
 }
 
-function createSingleMessage(target, command, data) {
+function createSingleLocalMessage(target, command, data) {
   return [target, command, data];
+}
+
+function createSingleRemoteMessage(command, node1, node2, node3) {
+  const nodeIndices = [node1, node2, node3]
+    .filter(node => node !== undefined)
+    .map(node => {
+      if (node && node.$index) {
+        return node.$index
+      }
+      return node;
+    });
+  return [command].concat(nodeIndices);
 }
 
 let remoteChannel;
@@ -153,7 +166,7 @@ describe('initialization', () => {
   });
 
   it('should send an "updateProperties" message to remote when local gets the remote initiated message', () => {
-    const updatePropertiesMessage = createSingleMessage('WINDOW', 'updateProperties', {
+    const updatePropertiesMessage = createSingleLocalMessage('WINDOW', 'updateProperties', {
       extraData: {
         WINDOW: windowData
       }});
@@ -162,5 +175,176 @@ describe('initialization', () => {
 
   it('should update window properties on remote side when it gets an updateProperties message', function() {
     expect(remoteDOM.window).toMatchObject(windowData);
+  });
+});
+
+describe('node appendChild', () => {
+  it("should put the new child at the end and update the child's parent", () => {
+    const parent = remoteDOM.document.createElement('div');
+
+    const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
+    const imgNode = parent.appendChild(remoteDOM.document.createElement('img'));
+
+    expect(parent.childNodes).toEqual([aNode, imgNode]);
+    expect(aNode.parentNode).toBe(parent);
+    expect(imgNode.parentNode).toBe(parent);
+  });
+
+  it("should append the children of a document fragment and update the children's parents", () => {
+    const parent = remoteDOM.document.createElement('div');
+    const docFragment = remoteDOM.document.createDocumentFragment();
+    const aNode = docFragment.appendChild(remoteDOM.document.createElement('a'));
+    const imgNode = docFragment.appendChild(remoteDOM.document.createElement('img'));
+
+    parent.appendChild(docFragment);
+
+    expect(parent.childNodes).toEqual([aNode, imgNode]);
+    expect(aNode.parentNode).toBe(parent);
+    expect(imgNode.parentNode).toBe(parent);
+  });
+});
+
+describe('node insertBefore', () => {
+  describe("not providing a ref node", () => {
+    it("should insert the new child at the end", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
+      const imgNode = remoteDOM.document.createElement('img');
+      remoteChannel.postMessage.mockClear();
+
+      parent.insertBefore(imgNode);
+
+      expect(parent.childNodes).toEqual([aNode, imgNode]);
+      expect(aNode.parentNode).toBe(parent);
+      expect(imgNode.parentNode).toBe(parent);
+      expect(remoteChannel.postMessage).toHaveBeenCalledWith(createPostMessage([createSingleRemoteMessage(common.Commands.insertBefore, parent, imgNode, null)]));
+    });
+
+    it("should insert a document fragment's children at the end (and not the fragment itself)", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
+      const docFragment = remoteDOM.document.createDocumentFragment();
+      const imgNode = docFragment.appendChild(remoteDOM.document.createElement('img'));
+      const divNode = docFragment.appendChild(remoteDOM.document.createElement('div'));
+      remoteChannel.postMessage.mockClear();
+
+      parent.insertBefore(docFragment);
+
+      expect(parent.childNodes).toEqual([aNode, imgNode, divNode]);
+      expect(aNode.parentNode).toBe(parent);
+      expect(imgNode.parentNode).toBe(parent);
+      expect(divNode.parentNode).toBe(parent);
+      expect(remoteChannel.postMessage).toHaveBeenCalledWith(createPostMessage([createSingleRemoteMessage(common.Commands.insertBefore, parent, docFragment, null)]));
+    });
+  });
+
+  describe("providing a ref node", () => {
+    it("should insert the new child before the ref child", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
+      const imgNode = remoteDOM.document.createElement('img');
+      remoteChannel.postMessage.mockClear();
+
+      parent.insertBefore(imgNode, aNode);
+
+      expect(parent.childNodes).toEqual([imgNode, aNode]);
+      expect(aNode.parentNode).toBe(parent);
+      expect(imgNode.parentNode).toBe(parent);
+      expect(remoteChannel.postMessage).toHaveBeenCalledWith(createPostMessage([createSingleRemoteMessage(common.Commands.insertBefore, parent, imgNode, aNode)]));
+    });
+
+    it("should insert a document fragment's children before the ref child (and not the fragment itself)", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
+      const docFragment = remoteDOM.document.createDocumentFragment();
+      const imgNode = docFragment.appendChild(remoteDOM.document.createElement('img'));
+      const divNode = docFragment.appendChild(remoteDOM.document.createElement('div'));
+      remoteChannel.postMessage.mockClear();
+
+      parent.insertBefore(docFragment, aNode);
+
+      expect(parent.childNodes).toEqual([imgNode, divNode, aNode]);
+      expect(aNode.parentNode).toBe(parent);
+      expect(imgNode.parentNode).toBe(parent);
+      expect(divNode.parentNode).toBe(parent);
+      expect(remoteChannel.postMessage).toHaveBeenCalledWith(createPostMessage([createSingleRemoteMessage(common.Commands.insertBefore, parent, docFragment, aNode)]));
+    });
+  });
+
+  describe("providing a ref node that is not a child of the parent node", () => {
+    it("should throw error and not send a message", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const imgNode = remoteDOM.document.createElement('img');
+      const aNode = remoteDOM.document.createElement('a');
+      remoteChannel.postMessage.mockClear();
+
+      expect(() => {
+        parent.insertBefore(imgNode, aNode);
+      }).toThrow();
+      expect(remoteChannel.postMessage).not.toHaveBeenCalled()
+    });
+  });
+});
+
+describe('node replaceChild', () => {
+  describe("not providing a ref node", () => {
+    it("should throw error and not send a message", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const aNode = remoteDOM.document.createElement('a');
+      parent.appendChild(remoteDOM.document.createElement('img'));
+      remoteChannel.postMessage.mockClear();
+
+      expect(() => {
+        parent.replaceChild(aNode);
+      }).toThrow();
+      expect(remoteChannel.postMessage).not.toHaveBeenCalled()
+    });
+  });
+
+  describe("providing a ref node", () => {
+    it("should replace the old child with the newbefore the ref child", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
+      const imgNode = remoteDOM.document.createElement('img');
+      remoteChannel.postMessage.mockClear();
+
+      parent.replaceChild(imgNode, aNode);
+
+      expect(parent.childNodes).toEqual([imgNode]);
+      expect(aNode.parentNode).toBe(null);
+      expect(imgNode.parentNode).toBe(parent);
+      expect(remoteChannel.postMessage).toHaveBeenCalledWith(createPostMessage([createSingleRemoteMessage(common.Commands.replaceChild, parent, imgNode, aNode)]));
+    });
+
+    it("should replace the old child with the children of a document fragment (and not the fragment itself)", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
+      const docFragment = remoteDOM.document.createDocumentFragment();
+      const imgNode = docFragment.appendChild(remoteDOM.document.createElement('img'));
+      const divNode = docFragment.appendChild(remoteDOM.document.createElement('div'));
+      remoteChannel.postMessage.mockClear();
+
+      parent.replaceChild(docFragment, aNode);
+
+      expect(parent.childNodes).toEqual([imgNode, divNode]);
+      expect(aNode.parentNode).toBe(null);
+      expect(imgNode.parentNode).toBe(parent);
+      expect(divNode.parentNode).toBe(parent);
+      expect(remoteChannel.postMessage).toHaveBeenCalledWith(createPostMessage([createSingleRemoteMessage(common.Commands.replaceChild, parent, docFragment, aNode)]));
+    });
+  });
+
+  describe("providing a ref node that is not a child of the parent node", () => {
+    it("should throw error and not send a message", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const imgNode = remoteDOM.document.createElement('img');
+      const aNode = remoteDOM.document.createElement('a');
+      remoteChannel.postMessage.mockClear();
+
+      expect(() => {
+        parent.replaceChild(imgNode, aNode);
+      }).toThrow();
+      expect(remoteChannel.postMessage).not.toHaveBeenCalled()
+    });
   });
 });
