@@ -169,6 +169,7 @@ function applyMessages(queueIndex, messages) {
 
 function handleRemoteInit(queueIndex) {
   updateRemoteOnInit(queueIndex);
+  registerToWindowChanges(() => updateRemoteOnInit(queueIndex));
 }
 
 function updateRemoteOnInit(queueIndex) {
@@ -189,6 +190,10 @@ function updateRemoteOnInit(queueIndex) {
       }
     }
   }]);
+}
+
+function registerToWindowChanges(callback) {
+  win.addEventListener('orientationchange', callback);
 }
 
 function createMessageQueue(channel, timerFunction, nativeInvocations) {

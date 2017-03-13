@@ -34,7 +34,8 @@ jsdomDefaultView.window.screen.orientation = {
   type: windowData.screen.orientation.type,
   shouldNotTakeThisProp: 100
 };
-localDOM.setWindow(jsdomDefaultView.window)
+jsdomDefaultView.window.addEventListener = jest.fn();
+localDOM.setWindow(jsdomDefaultView.window);
 
 let localHandler = null;
 let remoteHandler = null;
@@ -162,5 +163,9 @@ describe('initialization', () => {
 
   it('should update window properties on remote side when it gets an updateProperties message', function() {
     expect(remoteDOM.window).toMatchObject(windowData);
+  });
+
+  it('should register to relevant updates of window properties', () => {
+    expect(jsdomDefaultView.window.addEventListener.mock.calls[0][0]).toEqual('orientationchange');
   });
 });
