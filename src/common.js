@@ -11,6 +11,7 @@ const Node = {
   "DOCUMENT_TYPE_NODE": 10,
   "DOCUMENT_FRAGMENT_NODE": 11,
   "NOTATION_NODE": 12,
+  "VIDEO_NODE": 13,
   "DOCUMENT_POSITION_DISCONNECTED": 1,
   "DOCUMENT_POSITION_PRECEDING": 2,
   "DOCUMENT_POSITION_FOLLOWING": 4,
@@ -23,6 +24,7 @@ const Commands = {
   createContainer: 'createContainer',
   createElement: 'createElement',
   createTextNode: 'createTextNode',
+  createVideoNode: 'createVideoNode',
   createComment: 'createComment',
   createDocumentFragment: 'createDocumentFragment',
   appendChild: 'appendChild',
@@ -39,7 +41,9 @@ const Commands = {
   setValue: 'setValue',
   addEventListener: 'addEventListener',
   removeEventListener: 'removeEventListener',
-  invokeNative: 'invokeNative'
+  invokeNative: 'invokeNative',
+  pause: 'pause',
+  play: 'play'
 };
 
 const Constants = {
