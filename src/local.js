@@ -187,6 +187,8 @@ function updateRemoteOnInit(queueIndex) {
           }
         },
         devicePixelRatio: win.devicePixelRatio,
+        innerWidth: win.innerWidth,
+        innerHeight: win.innerHeight
       }
     }
   }]);

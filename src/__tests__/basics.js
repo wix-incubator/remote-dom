@@ -17,7 +17,9 @@ const windowData = {
       type: 'test-type'
     }
   },
-  devicePixelRatio: 2
+  devicePixelRatio: 2,
+  innerWidth: 50,
+  innerHeight: 60
 };
 const jsdom = require('jsdom');
 const jsdomDefaultView = jsdom.jsdom({
@@ -34,6 +36,8 @@ jsdomDefaultView.window.screen.orientation = {
   type: windowData.screen.orientation.type,
   shouldNotTakeThisProp: 100
 };
+jsdomDefaultView.window.innerWidth = windowData.innerWidth;
+jsdomDefaultView.window.innerHeight = windowData.innerHeight;
 jsdomDefaultView.window.addEventListener = jest.fn();
 localDOM.setWindow(jsdomDefaultView.window);
 
