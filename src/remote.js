@@ -93,7 +93,7 @@ class RemoteNode {
     queue.push([Commands.appendChild, this.$index, child.$index]);
 
     const childrenToAppend = child.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? child.childNodes : [child];
-    this.childNodes.splice.apply(this.childNodes, [this.childNodes.length, 0].concat(childrenToAppend));
+    this.childNodes.splice(this.childNodes.length, 0, ...childrenToAppend);
     childrenToAppend.forEach((childNode) => {
       childNode.parentNode = this;
       childNode.host = this.$host;
@@ -111,7 +111,7 @@ class RemoteNode {
     queue.push([Commands.insertBefore, this.$index, child.$index, refChild ? refChild.$index : null]);
 
     const childrenToInsert = child.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? child.childNodes : [child];
-    this.childNodes.splice.apply(this.childNodes, [idx, 0].concat(childrenToInsert));
+    this.childNodes.splice(idx, 0, ...childrenToInsert);
     childrenToInsert.forEach((childNode) => {
       childNode.parentNode = this;
       childNode.host = this.$host;
@@ -122,7 +122,7 @@ class RemoteNode {
 
   removeChild(child) {
     queue.push([Commands.removeChild, this.$index, child.$index]);
-    const idx = this.childNodes.indexOf(child)
+    const idx = this.childNodes.indexOf(child);
     if (idx !== -1) {
       this.childNodes.splice(idx, 1);
     }
@@ -130,7 +130,7 @@ class RemoteNode {
   }
 
   replaceChild(newChild, oldChild) {
-    const idx = this.childNodes.indexOf(oldChild)
+    const idx = this.childNodes.indexOf(oldChild);
     if (idx === -1) {
       throw new Error("Failed to execute 'replaceChild' on 'Node': The node to be replaced is not a child of this node.");
     }
@@ -138,7 +138,7 @@ class RemoteNode {
     queue.push([Commands.replaceChild, this.$index, newChild.$index, oldChild.$index]);
 
     const childrenToInsert = newChild.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? newChild.childNodes : [newChild];
-    this.childNodes.splice.apply(this.childNodes, [idx, 1].concat(childrenToInsert));
+    this.childNodes.splice(idx, 1, ...childrenToInsert);
     childrenToInsert.forEach((childNode) => {
       childNode.parentNode = this;
       childNode.host = this.$host;
