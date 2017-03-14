@@ -231,8 +231,8 @@ class RemoteFragment extends RemoteNode {
 }
 
 class RemoteVideo extends RemoteElement {
-    constructor(tagName) {
-        super(tagName);
+    constructor() {
+        super('video');
     }
 
     pause () {
@@ -246,7 +246,7 @@ class RemoteVideo extends RemoteElement {
 
 function createElement(tagName) {
   if (tagName === 'video') {
-    return createVideoNode(tagName)
+    return createVideoNode()
   }
   const res = new RemoteElement(tagName);
   queue.push([Commands.createElement, res.$index, res.tagName]);
@@ -265,8 +265,8 @@ function createComment(val) {
   return res;
 }
 
-function createVideoNode(tagName) {
-  const res = new RemoteVideo(tagName);
+function createVideoNode() {
+  const res = new RemoteVideo();
   queue.push([Commands.createElement, res.$index, res.tagName]);
   return res;
 }

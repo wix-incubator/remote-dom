@@ -91,7 +91,6 @@ function applyMessages(queueIndex, messages) {
       elements[msg[1]] = containers[msg[2]].domElement;
       break;
       case (Commands.createElement):
-      case (Commands.createVideoNode):
         elements[msg[1]] = doc.createElement(msg[2].toLowerCase());
         elements[msg[1]][Constants.QUEUE_INDEX] = queueIndex;
         elements[msg[1]][Constants.NODE_INDEX] = msg[1];
