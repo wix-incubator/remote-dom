@@ -1,8 +1,8 @@
-const React = require('react');
-const ReactDOM = require('react-dom');
-const remoteDOM = require('../remote');
-const localDOM = require('../local');
-const testUtils = require('./testUtils');
+import React from 'react';
+import ReactDOM from 'react-dom';
+import * as remoteDOM from '../remote';
+import * as localDOM from '../local';
+import testUtils from './testUtils';
 
 let domContainer, remoteContainer, localContainer;
 let counter = 0;
