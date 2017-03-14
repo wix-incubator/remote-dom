@@ -41,7 +41,8 @@ const Commands = {
   removeEventListener: 'removeEventListener',
   invokeNative: 'invokeNative',
   pause: 'pause',
-  play: 'play'
+  play: 'play',
+  src: 'src'
 };
 
 const Constants = {
