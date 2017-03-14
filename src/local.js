@@ -202,6 +202,7 @@ function updateRemoteOnInit(queueIndex) {
 
 function registerToWindowChanges(callback) {
   win.addEventListener('orientationchange', callback);
+  win.addEventListener('resize', callback);
 }
 
 function createMessageQueue(channel, timerFunction, nativeInvocations) {

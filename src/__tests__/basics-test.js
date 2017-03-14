@@ -98,6 +98,7 @@ describe('initialization', () => {
   });
 
   it('should register to relevant updates of actual local window properties', () => {
-    expect(env.jsdomDefaultView.window.addEventListener.mock.calls[0][0]).toEqual('orientationchange');
+    expect(env.jsdomDefaultView.window.addEventListener).toHaveBeenCalledWith('orientationchange', expect.any(Function));
+    expect(env.jsdomDefaultView.window.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
   });
 });
