@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/wix/remote-dom.svg?branch=master)](https://travis-ci.org/wix/remote-dom)
+[![Coverage Status](https://coveralls.io/repos/github/wix/remote-dom/badge.svg?branch=master)](https://coveralls.io/github/wix/remote-dom?branch=master)
 
 # remote-dom AKA Virtual Virtual DOM
 

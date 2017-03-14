@@ -1,6 +1,5 @@
 import {Node, Commands, Constants, MessagesQueue, StyleAttributes, EventDOMNodeAttributes, SupportedEvents, Pipe}  from './common'
 
-
 let index = 0;
 
 const queue = new MessagesQueue();
@@ -231,8 +230,24 @@ class RemoteFragment extends RemoteNode {
   }
 }
 
+class RemoteVideo extends RemoteElement {
+    constructor() {
+        super('video');
+    }
+
+    pause () {
+      queue.push([Commands.pause, this.$index]);
+    }
+
+    play () {
+      queue.push([Commands.play, this.$index]);
+    }
+}
 
 function createElement(tagName) {
+  if (tagName === 'video') {
+    return createVideoNode()
+  }
   const res = new RemoteElement(tagName);
   queue.push([Commands.createElement, res.$index, res.tagName]);
   return res;
@@ -250,10 +265,16 @@ function createComment(val) {
   return res;
 }
 
-function createDocumentFragment() {
-  const res = new RemoteFragment();
-  queue.push([Commands.createDocumentFragment, res.$index]);
+function createVideoNode() {
+  const res = new RemoteVideo();
+  queue.push([Commands.createElement, res.$index, res.tagName]);
   return res;
+}
+
+function createDocumentFragment() {
+    const res = new RemoteFragment();
+    queue.push([Commands.createDocumentFragment, res.$index]);
+    return res;
 }
 
 function createContainer(name) {
@@ -266,7 +287,7 @@ function createContainer(name) {
 
 function addEventListener(target, evtName, callback, capture) {
   index++;
-  // console.log('addEventListener', target, evtName);
+  //console.log('addEventListener', target, evtName);
   eventsByTypeAndTarget[evtName] = eventsByTypeAndTarget[evtName] || {};
   eventsByTypeAndTarget[evtName][target] = eventsByTypeAndTarget[evtName][target] || {};
   eventsByTypeAndTarget[evtName][target][index] = callback;
