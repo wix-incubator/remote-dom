@@ -8,51 +8,57 @@ global.window = remoteDOM.window;
 global.navigator = {userAgent: 'Chrome'};
 console.debug = console.log.bind(console);
 
-const jsdom = require('jsdom');
-const jsdomDefaultView = jsdom.jsdom({
+function setup(windowOverrides) {
+  const jsdom = require('jsdom');
+  const jsdomDefaultView = jsdom.jsdom({
     features: {
-        FetchExternalResources: false,
-        ProcessExternalResources: false
+      FetchExternalResources: false,
+      ProcessExternalResources: false
     }
-}).defaultView;
+  }).defaultView;
 
-localDOM.setWindow(jsdomDefaultView.window)
+  Object.assign(jsdomDefaultView.window, windowOverrides);
+  localDOM.setWindow(jsdomDefaultView.window)
 
-let localHandler = null;
-let remoteHandler = null;
-function syncTimeout(cb) {
+  let localHandler = null;
+  let remoteHandler = null;
+  function syncTimeout(cb) {
     cb();
-}
+  }
 
-const nativeInvocationMock = jest.fn();
+  const nativeInvocationMock = jest.fn();
 
-const localQueue = localDOM.createMessageQueue({
+  const localQueue = localDOM.createMessageQueue({
     postMessage: function(message) {
-        //console.log(message);
-        if (remoteHandler) {
-            remoteHandler({data: message});
-        }
+      //console.log(message);
+      if (remoteHandler) {
+        remoteHandler({data: message});
+      }
     },
     addEventListener: function (msgType, handler) {
-        localHandler = handler;
+      localHandler = handler;
     }
-}, syncTimeout, {native: nativeInvocationMock});
+  }, syncTimeout, {native: nativeInvocationMock});
 
-remoteDOM.setChannel({
+  remoteDOM.setChannel({
     postMessage: function (message) {
-        //console.log(message);
-        if (localHandler) {
-            localHandler({data: message});
-        }
+      //console.log(message);
+      if (localHandler) {
+        localHandler({data: message});
+      }
     },
     addEventListener: function(msgType, handler) {
-        remoteHandler = handler;
+      remoteHandler = handler;
     }
-}, syncTimeout);
+  }, syncTimeout);
 
-
-module.exports = {
+  return {
     jsdomDefaultView,
     localQueue,
     nativeInvocationMock
+  };
+}
+
+module.exports = {
+    setup
 }

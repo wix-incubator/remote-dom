@@ -4,7 +4,7 @@ const remoteDOM = require('../remote');
 const localDOM = require('../local');
 const testUtils = require('./testUtils');
 
-const windowData = {
+const windowOverrides = {
   screen: {
     width: 100,
     height: 200,
@@ -15,19 +15,20 @@ const windowData = {
   },
   devicePixelRatio: 2,
   innerWidth: 50,
-  innerHeight: 60
+  innerHeight: 60,
+  addEventListener: jest.fn()
 };
 
 let domContainer,remoteContainer, localContainer;
 let counter = 0;
+let env;
 
 beforeEach(() => {
-  Object.assign(testUtils.jsdomDefaultView.window, windowData);
-  testUtils.jsdomDefaultView.window.addEventListener = jest.fn();
-  domContainer = testUtils.jsdomDefaultView.document.createElement('div');
+  env = testUtils.setup(windowOverrides);
+  domContainer = env.jsdomDefaultView.document.createElement('div');
   const id = 'container_' + counter++;
-  testUtils.jsdomDefaultView.document.body.appendChild(domContainer);
-  localContainer = localDOM.createContainer(testUtils.localQueue, domContainer, id);
+  env.jsdomDefaultView.document.body.appendChild(domContainer);
+  localContainer = localDOM.createContainer(env.localQueue, domContainer, id);
   remoteContainer = remoteDOM.createContainer(id);
 });
 
@@ -60,7 +61,7 @@ it('native invocation', () => {
     }}>hello {props.name}</span>);
     ReactDOM.render(React.createElement(statelessComp, {name:'world'}), remoteContainer);
     expect(domContainer.textContent).toBe('hello world');
-    expect(testUtils.nativeInvocationMock).toHaveBeenLastCalledWith(domContainer.firstChild, true);
+    expect(env.nativeInvocationMock).toHaveBeenLastCalledWith(domContainer.firstChild, true);
 });
 
 it('event click', () => {
@@ -91,10 +92,12 @@ it('node replaceChild', () => {
 
 describe('initialization', () => {
   it('should update remote window properties from actual local window on initialization', function() {
-    expect(remoteDOM.window).toMatchObject(windowData);
+    const windowOverridesWithoutMethods = Object.assign({}, windowOverrides);
+    delete windowOverridesWithoutMethods.addEventListener;
+    expect(remoteDOM.window).toMatchObject(windowOverridesWithoutMethods);
   });
 
   it('should register to relevant updates of actual local window properties', () => {
-    expect(jsdomDefaultView.window.addEventListener.mock.calls[0][0]).toEqual('orientationchange');
+    expect(env.jsdomDefaultView.window.addEventListener.mock.calls[0][0]).toEqual('orientationchange');
   });
 });
