@@ -39,7 +39,12 @@ const Commands = {
   setValue: 'setValue',
   addEventListener: 'addEventListener',
   removeEventListener: 'removeEventListener',
-  invokeNative: 'invokeNative'
+  invokeNative: 'invokeNative',
+  updateProperties: 'updateProperties',
+  initiated: 'initiated',
+  pause: 'pause',
+  play: 'play',
+  src: 'src'
 };
 
 const Constants = {

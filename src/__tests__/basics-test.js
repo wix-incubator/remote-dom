@@ -1,63 +1,34 @@
-const React = require('react');
-const ReactDOM = require('react-dom');
-const remoteDOM = require('../remote');
-const localDOM = require('../local');
+import React from 'react';
+import ReactDOM from 'react-dom';
+import * as remoteDOM from '../remote';
+import * as localDOM from '../local';
+import testUtils from './testUtils';
 
-global.document = remoteDOM.document;
-global.window = remoteDOM.window;
-global.navigator = {userAgent: 'Chrome'};
-console.debug = console.log.bind(console);
-
-const jsdom = require('jsdom');
-const jsdomDefaultView = jsdom.jsdom({
-    features: {
-        FetchExternalResources: false,
-        ProcessExternalResources: false
-    }
-}).defaultView;
-
-localDOM.setWindow(jsdomDefaultView.window)
-
-let localHandler = null;
-let remoteHandler = null;
-function syncTimeout(cb) {
-  cb();
-}
-
-const nativeInvocationMock = jest.fn();
-
-const localQueue = localDOM.createMessageQueue({
-  postMessage: function(message) {
-    //console.log(message);
-    if (remoteHandler) {
-      remoteHandler({data: message});
+const windowOverrides = {
+  screen: {
+    width: 100,
+    height: 200,
+    orientation: {
+      angle: 0,
+      type: 'test-type'
     }
   },
-  addEventListener: function (msgType, handler) {
-    localHandler = handler;
-  }
-}, syncTimeout, {native: nativeInvocationMock});
-
-remoteDOM.setChannel({
-  postMessage: function (message) {
-    //console.log(message);
-    if (localHandler) {
-      localHandler({data: message});
-    }
-  },
-  addEventListener: function(msgType, handler) {
-    remoteHandler = handler;
-  }
-}, syncTimeout);
+  devicePixelRatio: 2,
+  innerWidth: 50,
+  innerHeight: 60,
+  addEventListener: jest.fn()
+};
 
 let domContainer,remoteContainer, localContainer;
 let counter = 0;
+let env;
 
 beforeEach(() => {
-  domContainer = jsdomDefaultView.document.createElement('div');
+  env = testUtils.setup(windowOverrides);
+  domContainer = env.jsdomDefaultView.document.createElement('div');
   const id = 'container_' + counter++;
-  jsdomDefaultView.document.body.appendChild(domContainer);
-  localContainer = localDOM.createContainer(localQueue, domContainer, id);
+  env.jsdomDefaultView.document.body.appendChild(domContainer);
+  localContainer = localDOM.createContainer(env.localQueue, domContainer, id);
   remoteContainer = remoteDOM.createContainer(id);
 });
 
@@ -90,7 +61,7 @@ it('native invocation', () => {
     }}>hello {props.name}</span>);
     ReactDOM.render(React.createElement(statelessComp, {name:'world'}), remoteContainer);
     expect(domContainer.textContent).toBe('hello world');
-    expect(nativeInvocationMock).toHaveBeenLastCalledWith(domContainer.firstChild, true);
+    expect(env.nativeInvocationMock).toHaveBeenLastCalledWith(domContainer.firstChild, true);
 });
 
 it('event click', () => {
@@ -118,3 +89,16 @@ it('node replaceChild', () => {
     remoteContainer.children[0].replaceChild(children[1], children[0])
     expect(domContainer.textContent).toBe('hello span 2')
 })
+
+describe('initialization', () => {
+  it('should update remote window properties from actual local window on initialization', function() {
+    const windowOverridesWithoutMethods = Object.assign({}, windowOverrides);
+    delete windowOverridesWithoutMethods.addEventListener;
+    expect(remoteDOM.window).toMatchObject(windowOverridesWithoutMethods);
+  });
+
+  it('should register to relevant updates of actual local window properties', () => {
+    expect(env.jsdomDefaultView.window.addEventListener).toHaveBeenCalledWith('orientationchange', expect.any(Function));
+    expect(env.jsdomDefaultView.window.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
+  });
+});

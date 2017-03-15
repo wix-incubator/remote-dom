@@ -22,7 +22,7 @@ module.exports = {
   },
   resolve: {
     alias: {
-      'remoteDOM': path.resolve(__dirname, '../dist/remote.js')
+      'remoteDOM': path.resolve(__dirname, '../dist/bundle.js')
     }
   },
   plugins: [

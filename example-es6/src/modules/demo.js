@@ -1,11 +1,11 @@
+import remoteDOM from 'remoteDOM'
 import React from 'react'
 import ReactDOM from 'react-dom'
-import remoteDOM from 'remoteDOM'
 import App from './app'
 
-self.window = remoteDOM.window
-self.document = remoteDOM.document
-remoteDOM.setChannel(self)
+self.window = remoteDOM.remote.window
+self.document = remoteDOM.remote.document
+remoteDOM.remote.setChannel(self)
 
 class AppContainer {
     constructor(items = [], onItemClick = (item)=> console.log(item), onImageClick = (item)=> console.log(item), onButtonClick = (item)=> console.log(item)) {
@@ -22,7 +22,7 @@ const items = [
 ]
 
 const props = new AppContainer(items)
-const renderElement = props => ReactDOM.render(React.createElement(App, props), remoteDOM.createContainer())
+const renderElement = props => ReactDOM.render(React.createElement(App, props), remoteDOM.remote.createContainer())
 renderElement(props)
 
 

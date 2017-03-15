@@ -5,14 +5,23 @@
   "main": "./dist/bundle.js",
   "scripts": {
     "demo": "node node_modules/http-server/bin/http-server -c-1",
-    "test": "node node_modules/jest/bin/jest.js",
+    "test": "node node_modules/jest/bin/jest.js --coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
     "coverage": "node node_modules/jest/bin/jest.js --coverage",
     "build": "node ./node_modules/webpack/bin/webpack.js && echo 'BUILD OK'"
   },
-  "author": {"name": "Avi Marcus", "email": "avim@wix.com"},
+  "author": {
+    "name": "Avi Marcus",
+    "email": "avim@wix.com"
+  },
   "contributors": [
-    {"name": "Lior Shefer", "email": "lior.shefer@wix.com"},
-    {"name": "Shimi Liderman", "email": "shimil@wix.com"}
+    {
+      "name": "Lior Shefer",
+      "email": "lior.shefer@wix.com"
+    },
+    {
+      "name": "Shimi Liderman",
+      "email": "shimil@wix.com"
+    }
   ],
   "license": "MIT",
   "devDependencies": {
@@ -22,11 +31,15 @@
     "babel-loader": "^6.2.8",
     "babel-preset-es2015": "^6.18.0",
     "babel-preset-react": "^6.16.0",
+    "coveralls": "^2.12.0",
     "http-server": "^0.9.0",
     "jest": "^18.0.0",
     "jsdom": "^9.8.3",
     "react": "^15.4.1",
     "react-dom": "^15.4.1",
     "webpack": "^2.2.1"
+  },
+  "jest": {
+    "testRegex": "__tests__.*-test.js$"
   }
 }
