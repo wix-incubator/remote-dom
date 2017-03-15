@@ -1,4 +1,4 @@
-import {Node, Commands, Constants, MessagesQueue, EventAttributes, EventDOMNodeAttributes, Pipe}  from './common'
+import {Node, Commands, Constants, MessagesQueue, EventDOMNodeAttributes, Pipe}  from './common'
 class LocalContainer {
   constructor(queueIndex, domElement, name) {
     this.domElement = domElement;
