@@ -145,11 +145,13 @@ function applyMessages(queueIndex, messages) {
       elements[msg[1]].value = msg[2];
       break;
       case (Commands.pause):
-          elements[msg[1]].pause();
-          break;
+        elements[msg[1]].pause();
+        break;
       case (Commands.play):
-          elements[msg[1]].play();
-          break;
+        elements[msg[1]].play();
+        break;
+      case (Commands.src):
+        elements[msg[1]].src = msg[2];
       case (Commands.addEventListener):
       const func = generalEventHandler.bind(null, queueIndex, msg[1], msg[2]);
       events[msg[2]] = events[msg[2]] || {};

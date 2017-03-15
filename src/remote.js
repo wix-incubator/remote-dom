@@ -235,12 +235,21 @@ class RemoteVideo extends RemoteElement {
         super('video');
     }
 
-    pause () {
+    pause() {
       queue.push([Commands.pause, this.$index]);
     }
 
-    play () {
+    play() {
       queue.push([Commands.play, this.$index]);
+    }
+
+    get src() {
+      return this.$src;
+    }
+
+    set src(value) {
+      this.$src =  value;
+      queue.push([Commands.src, this.$index, value]);
     }
 }
 

@@ -43,7 +43,8 @@ const Commands = {
   updateProperties: 'updateProperties',
   initiated: 'initiated',
   pause: 'pause',
-  play: 'play'
+  play: 'play',
+  src: 'src'
 };
 
 const Constants = {
