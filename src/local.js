@@ -152,6 +152,7 @@ function applyMessages(queueIndex, messages) {
         break;
       case (Commands.src):
         elements[msg[1]].src = msg[2];
+        break;
       case (Commands.addEventListener):
       const func = generalEventHandler.bind(null, queueIndex, msg[1], msg[2]);
       events[msg[2]] = events[msg[2]] || {};
