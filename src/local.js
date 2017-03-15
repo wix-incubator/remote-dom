@@ -163,6 +163,9 @@ function applyMessages(queueIndex, messages) {
       const origFunc = events[msg[2]][msg[3]];
       elements[msg[1]].removeEventListener(msg[2], origFunc);
       break;
+      case (Commands.initiated):
+        handleRemoteInit(queueIndex);
+        break;
       case (Commands.invokeNative):
       if (nativeInvocations[msg[2]]) {
         nativeInvocations[msg[2]](elements[msg[1]], msg[3]);
@@ -170,6 +173,38 @@ function applyMessages(queueIndex, messages) {
       break;
     }
   });
+}
+
+function handleRemoteInit(queueIndex) {
+  updateRemoteOnInit(queueIndex);
+  registerToWindowChanges(() => updateRemoteOnInit(queueIndex));
+}
+
+function updateRemoteOnInit(queueIndex) {
+  queuesByIndex[queueIndex].push([Constants.WINDOW, 'updateProperties', {
+    extraData: {
+      WINDOW: {
+        screen: {
+          width: win.screen.width,
+          height: win.screen.height,
+          deviceXDPI: win.screen.deviceXDPI,
+          logicalXDPI: win.screen.logicalXDPI,
+          orientation: {
+            angle: win.screen.orientation && win.screen.orientation.angle,
+            type: win.screen.orientation && win.screen.orientation.type
+          }
+        },
+        devicePixelRatio: win.devicePixelRatio,
+        innerWidth: win.innerWidth,
+        innerHeight: win.innerHeight
+      }
+    }
+  }]);
+}
+
+function registerToWindowChanges(callback) {
+  win.addEventListener('orientationchange', callback);
+  win.addEventListener('resize', callback);
 }
 
 function createMessageQueue(channel, timerFunction, nativeInvocations) {

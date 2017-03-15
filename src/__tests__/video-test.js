@@ -6,13 +6,15 @@ import testUtils from './testUtils';
 
 let domContainer, remoteContainer, localContainer;
 let counter = 0;
+let env;
 
 describe('video tests', () => {
   beforeEach(() => {
-    domContainer = testUtils.jsdomDefaultView.document.createElement('div');
+    env = testUtils.setup();
+    domContainer = env.jsdomDefaultView.document.createElement('div');
     const id = 'container_' + counter++;
-    testUtils.jsdomDefaultView.document.body.appendChild(domContainer);
-    localContainer = localDOM.createContainer(testUtils.localQueue, domContainer, id);
+    env.jsdomDefaultView.document.body.appendChild(domContainer);
+    localContainer = localDOM.createContainer(env.localQueue, domContainer, id);
     remoteContainer = remoteDOM.createContainer(id);
   });
 

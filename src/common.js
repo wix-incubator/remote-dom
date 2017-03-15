@@ -40,6 +40,8 @@ const Commands = {
   addEventListener: 'addEventListener',
   removeEventListener: 'removeEventListener',
   invokeNative: 'invokeNative',
+  updateProperties: 'updateProperties',
+  initiated: 'initiated',
   pause: 'pause',
   play: 'play',
   src: 'src'
