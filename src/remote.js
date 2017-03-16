@@ -309,7 +309,7 @@ function removeEventListener(target, evtName, callback) {
   eventsByTypeAndTarget[evtName][target] = eventsByTypeAndTarget[evtName][target] || {};
   const evts = eventsByTypeAndTarget[evtName][target];
   const idx = Object.keys(evts).find((evtIndex) => {
-    evts[evtIndex] === callback;
+    return evts[evtIndex] === callback;
   });
   delete evts[idx];
   queue.push([Commands.removeEventListener, target, evtName, index]);
