@@ -1,4 +1,5 @@
 import {Node, Commands, Constants, MessagesQueue, EventAttributes, EventDOMNodeAttributes, Pipe}  from './common'
+
 class LocalContainer {
   constructor(queueIndex, domElement, name) {
     this.domElement = domElement;
@@ -88,6 +89,11 @@ function applyMessages(queueIndex, messages) {
     //console.log('applyMessage:', msg);
     switch (msgType) {
       case (Commands.createContainer):
+      if (elements[2]) {
+        while(elements[2].firstChild){
+          elements[2].removeChild(elements[2].firstChild);
+        }
+      } 
       elements[msg[1]] = containers[msg[2]].domElement;
       break;
       case (Commands.createElement):

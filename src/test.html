@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <div>
+        <div id="childSpan">foo bar</div>
+    </div>
+    <button id="replace">click me</button>
+
+    <script>
+        // create an empty element node
+        // without an ID, any attributes, or any content
+        var sp1 = document.createElement("div");
+
+        // give it an id attribute called 'newSpan'
+        sp1.id = "newSpan";
+
+        // create some content for the new element.
+        var sp1_content = document.createTextNode("new replacement span element.");
+
+        // apply that content to the new element
+        sp1.appendChild(sp1_content);
+
+
+        var btn = document.getElementById("replace")
+        btn.addEventListener('click', () => {
+            // build a reference to the existing node to be replaced
+            var sp2 = document.getElementById("childSpan");
+            var parentDiv = sp2.parentNode;
+
+            // replace existing node sp2 with the new span element sp1
+            //parentDiv.replaceChild(sp1, sp2);
+            parentDiv.insertBefore(sp1, sp2)
+        })
+
+
+
+    </script>
+
+</body>
+</html>
