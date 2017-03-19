@@ -1,4 +1,4 @@
-import {Node, Commands, Constants, MessagesQueue, EventAttributes, EventDOMNodeAttributes, Pipe}  from './common'
+import {Node, Commands, Constants, MessagesQueue, EventDOMNodeAttributes, Pipe}  from './common'
 class LocalContainer {
   constructor(queueIndex, domElement, name) {
     this.domElement = domElement;
@@ -82,7 +82,7 @@ function applyMessages(queueIndex, messages) {
   const containers = containersByQueueAndName[queueIndex];
   const events = eventsByQueueAndName[queueIndex];
   const nativeInvocations = nativeInvocationsByQueue[queueIndex];
-  // console.log('applyMessages', queueIndex, messages);
+  //console.log('applyMessages', queueIndex, messages);
   messages.forEach(msg => {
     const msgType = msg[0];
     //console.log('applyMessage:', msg);
@@ -91,10 +91,10 @@ function applyMessages(queueIndex, messages) {
       elements[msg[1]] = containers[msg[2]].domElement;
       break;
       case (Commands.createElement):
-      elements[msg[1]] = doc.createElement(msg[2].toLowerCase());
-      elements[msg[1]][Constants.QUEUE_INDEX] = queueIndex;
-      elements[msg[1]][Constants.NODE_INDEX] = msg[1];
-      break;
+        elements[msg[1]] = doc.createElement(msg[2].toLowerCase());
+        elements[msg[1]][Constants.QUEUE_INDEX] = queueIndex;
+        elements[msg[1]][Constants.NODE_INDEX] = msg[1];
+        break;
       case (Commands.createTextNode):
       elements[msg[1]] = doc.createTextNode(msg[2]);
       elements[msg[1]][Constants.QUEUE_INDEX] = queueIndex;
@@ -144,6 +144,15 @@ function applyMessages(queueIndex, messages) {
       case (Commands.setValue):
       elements[msg[1]].value = msg[2];
       break;
+      case (Commands.pause):
+        elements[msg[1]].pause();
+        break;
+      case (Commands.play):
+        elements[msg[1]].play();
+        break;
+      case (Commands.src):
+        elements[msg[1]].src = msg[2];
+        break;
       case (Commands.addEventListener):
       const func = generalEventHandler.bind(null, queueIndex, msg[1], msg[2]);
       events[msg[2]] = events[msg[2]] || {};
@@ -169,6 +178,7 @@ function applyMessages(queueIndex, messages) {
 
 function handleRemoteInit(queueIndex) {
   updateRemoteOnInit(queueIndex);
+  registerToWindowChanges(() => updateRemoteOnInit(queueIndex));
 }
 
 function updateRemoteOnInit(queueIndex) {
@@ -186,9 +196,16 @@ function updateRemoteOnInit(queueIndex) {
           }
         },
         devicePixelRatio: win.devicePixelRatio,
+        innerWidth: win.innerWidth,
+        innerHeight: win.innerHeight
       }
     }
   }]);
+}
+
+function registerToWindowChanges(callback) {
+  win.addEventListener('orientationchange', callback);
+  win.addEventListener('resize', callback);
 }
 
 function createMessageQueue(channel, timerFunction, nativeInvocations) {

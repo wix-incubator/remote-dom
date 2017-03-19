@@ -1,15 +1,10 @@
-const React = require('react');
-const ReactDOM = require('react-dom');
-const remoteDOM = require('../remote');
-const localDOM = require('../local');
-const common = require('../common');
+import React from 'react';
+import ReactDOM from 'react-dom';
+import * as remoteDOM from '../remote';
+import * as localDOM from '../local';
+import testUtils from './testUtils';
 
-// global.document = remoteDOM.document;
-// global.window = remoteDOM.window;
-// global.navigator = {userAgent: 'Chrome'};
-console.debug = console.log.bind(console);
-
-const windowData = {
+const windowOverrides = {
   screen: {
     width: 100,
     height: 200,
@@ -18,87 +13,22 @@ const windowData = {
       type: 'test-type'
     }
   },
-  devicePixelRatio: 2
+  devicePixelRatio: 2,
+  innerWidth: 50,
+  innerHeight: 60,
+  addEventListener: jest.fn()
 };
-const jsdom = require('jsdom');
-const jsdomDefaultView = jsdom.jsdom({
-    features: {
-        FetchExternalResources: false,
-        ProcessExternalResources: false
-    }
-}).defaultView;
-jsdomDefaultView.window.screen.width = windowData.screen.width;
-jsdomDefaultView.window.screen.height = windowData.screen.height;
-jsdomDefaultView.window.devicePixelRatio = windowData.devicePixelRatio;
-jsdomDefaultView.window.screen.orientation = {
-  angle: windowData.screen.orientation.angle,
-  type: windowData.screen.orientation.type,
-  shouldNotTakeThisProp: 100
-};
-localDOM.setWindow(jsdomDefaultView.window)
-
-let localHandler = null;
-let remoteHandler = null;
-function syncTimeout(cb) {
-  cb();
-}
-
-const nativeInvocationMock = jest.fn();
-
-const localChannel = {
-  postMessage: jest.fn(function(message) {
-    if (remoteHandler) {
-      remoteHandler({data: message});
-    }
-  }),
-  addEventListener: jest.fn(function (msgType, handler) {
-    localHandler = handler;
-  })
-};
-const localQueue = localDOM.createMessageQueue(localChannel, syncTimeout, {native: nativeInvocationMock});
 
 let domContainer,remoteContainer, localContainer;
 let counter = 0;
-
-function createPostMessage (messages) {
-  return JSON.stringify({REMOTE_DOM: messages});
-}
-
-function createSingleLocalMessage(target, command, data) {
-  return [target, command, data];
-}
-
-function createSingleRemoteMessage(command, node1, node2, node3) {
-  const nodeIndices = [node1, node2, node3]
-    .filter(node => node !== undefined)
-    .map(node => {
-      if (node && node.$index) {
-        return node.$index
-      }
-      return node;
-    });
-  return [command].concat(nodeIndices);
-}
-
-let remoteChannel;
+let env;
 
 beforeEach(() => {
-  remoteChannel = {
-    postMessage: jest.fn(function (message) {
-      if (localHandler) {
-        localHandler({data: message});
-      }
-    }),
-    addEventListener: jest.fn(function(msgType, handler) {
-      remoteHandler = handler;
-    })
-  };
-  remoteDOM.setChannel(remoteChannel, syncTimeout);
-
-  domContainer = jsdomDefaultView.document.createElement('div');
+  env = testUtils.setup(windowOverrides);
+  domContainer = env.jsdomDefaultView.document.createElement('div');
   const id = 'container_' + counter++;
-  jsdomDefaultView.document.body.appendChild(domContainer);
-  localContainer = localDOM.createContainer(localQueue, domContainer, id);
+  env.jsdomDefaultView.document.body.appendChild(domContainer);
+  localContainer = localDOM.createContainer(env.localQueue, domContainer, id);
   remoteContainer = remoteDOM.createContainer(id);
 });
 
@@ -131,7 +61,7 @@ it('native invocation', () => {
     }}>hello {props.name}</span>);
     ReactDOM.render(React.createElement(statelessComp, {name:'world'}), remoteContainer);
     expect(domContainer.textContent).toBe('hello world');
-    expect(nativeInvocationMock).toHaveBeenLastCalledWith(domContainer.firstChild, true);
+    expect(env.nativeInvocationMock).toHaveBeenLastCalledWith(domContainer.firstChild, true);
 });
 
 it('event click', () => {
@@ -161,20 +91,15 @@ it('node replaceChild', () => {
 })
 
 describe('initialization', () => {
-  it('should notify local when remote channel is set', () => {
-    expect(remoteChannel.postMessage.mock.calls[0][0]).toEqual(createPostMessage([['initiated']]));
+  it('should update remote window properties from actual local window on initialization', function() {
+    const windowOverridesWithoutMethods = Object.assign({}, windowOverrides);
+    delete windowOverridesWithoutMethods.addEventListener;
+    expect(remoteDOM.window).toMatchObject(windowOverridesWithoutMethods);
   });
 
-  it('should send an "updateProperties" message to remote when local gets the remote initiated message', () => {
-    const updatePropertiesMessage = createSingleLocalMessage('WINDOW', 'updateProperties', {
-      extraData: {
-        WINDOW: windowData
-      }});
-    expect(localChannel.postMessage.mock.calls[0][0]).toEqual(createPostMessage([updatePropertiesMessage]));
-  });
-
-  it('should update window properties on remote side when it gets an updateProperties message', function() {
-    expect(remoteDOM.window).toMatchObject(windowData);
+  it('should register to relevant updates of actual local window properties', () => {
+    expect(env.jsdomDefaultView.window.addEventListener).toHaveBeenCalledWith('orientationchange', expect.any(Function));
+    expect(env.jsdomDefaultView.window.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
   });
 });
 
