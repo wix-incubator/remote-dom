@@ -39,6 +39,7 @@ const Commands = {
   setValue: 'setValue',
   addEventListener: 'addEventListener',
   removeEventListener: 'removeEventListener',
+  dispatchEvent: 'dispatchEvent',
   invokeNative: 'invokeNative',
   updateProperties: 'updateProperties',
   initiated: 'initiated',

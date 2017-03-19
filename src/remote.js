@@ -132,6 +132,10 @@ class RemoteNode {
     removeEventListener(this.$index, evtType, callback);
   }
 
+  dispatchEvent(event) {
+    queue.push([Commands.dispatchEvent, this.$index, event._type, event._eventInit, event._isCustom || false]);
+  }
+
   set value(val) {
     this.$value = val;
     queue.push([Commands.setValue, this.$index, val]);
@@ -281,9 +285,9 @@ function createVideoNode() {
 }
 
 function createDocumentFragment() {
-    const res = new RemoteFragment();
-    queue.push([Commands.createDocumentFragment, res.$index]);
-    return res;
+  const res = new RemoteFragment();
+  queue.push([Commands.createDocumentFragment, res.$index]);
+  return res;
 }
 
 function createContainer(name) {
@@ -361,7 +365,23 @@ SupportedEvents.forEach((e) => {
   document[e] = addEventListener.bind(null, Constants.DOCUMENT, e.substr(2));
 });
 
-var window = {
+class Event {
+  constructor(typeArg, eventInit) {
+    this._type = typeArg;
+    this._eventInit = eventInit;
+  }
+}
+
+class CustomEvent extends Event {
+  constructor(typeArg, customEventInit) {
+    super(typeArg, customEventInit);
+    this._isCustom = true;
+  }
+}
+
+const window = {
+  Event,
+  CustomEvent,
   addEventListener: addEventListener.bind(null, Constants.WINDOW),
   removeEventListener: removeEventListener.bind(null, Constants.WINDOW),
   document: document,

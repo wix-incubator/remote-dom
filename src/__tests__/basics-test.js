@@ -102,3 +102,47 @@ describe('initialization', () => {
     expect(env.jsdomDefaultView.window.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
   });
 });
+
+describe('dispatchEvent', () => {
+  it('should dispatch a regular event with the requested type and init params', () => {
+    const divNode = remoteDOM.document.createElement('div');
+    const evt = new remoteDOM.window.Event('click', {
+      bubbles: true,
+      cancelable: true,
+      scoped: true,
+      composed: true
+    });
+    const listenerSpy = jest.fn();
+    remoteContainer.appendChild(divNode);
+    divNode.addEventListener('click', listenerSpy);
+
+    divNode.dispatchEvent(evt);
+
+    expect(listenerSpy).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'click',
+      bubbles: true,
+      cancelable: true
+    }));
+  });
+
+  it('should dispatch a custom event with the requested type and init params', () => {
+    const divNode = remoteDOM.document.createElement('div');
+    const evt = new remoteDOM.window.CustomEvent('test-event', {
+      bubbles: true,
+      cancelable: true,
+      scoped: true,
+      composed: true
+    });
+    const listenerSpy = jest.fn();
+    remoteContainer.appendChild(divNode);
+    divNode.addEventListener('test-event', listenerSpy);
+
+    divNode.dispatchEvent(evt);
+
+    expect(listenerSpy).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'test-event',
+      bubbles: true,
+      cancelable: true
+    }));
+  });
+});

@@ -106,8 +106,12 @@ function applyMessages(queueIndex, messages) {
       elements[msg[1]][Constants.NODE_INDEX] = msg[1];
       break;
       case (Commands.createDocumentFragment):
-      elements[msg[1]] = doc.createDocumentFragment(msg[2]);
-      break;
+        elements[msg[1]] = doc.createDocumentFragment(msg[2]);
+        break;
+      case (Commands.dispatchEvent):
+        const evt = msg[4] ? new win.CustomEvent(msg[2], msg[3]) : new win.Event(msg[2], msg[3]);
+        elements[msg[1]].dispatchEvent(evt);
+        break;
       case (Commands.appendChild):
       elements[msg[1]].appendChild(elements[msg[2]]);
       break;
