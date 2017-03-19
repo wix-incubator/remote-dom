@@ -210,14 +210,15 @@ describe('node insertBefore', () => {
       const parent = remoteDOM.document.createElement('div');
       const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
       const imgNode = remoteDOM.document.createElement('img');
-      remoteChannel.postMessage.mockClear();
+      remoteContainer.appendChild(parent);
 
       parent.insertBefore(imgNode);
 
+      const domChildren = domContainer.children[0].children;
       expect(parent.childNodes).toEqual([aNode, imgNode]);
       expect(aNode.parentNode).toBe(parent);
       expect(imgNode.parentNode).toBe(parent);
-      expect(remoteChannel.postMessage).toHaveBeenCalledWith(createPostMessage([createSingleRemoteMessage(common.Commands.insertBefore, parent, imgNode, null)]));
+      expect(Array.from(domChildren).map(child => child.tagName.toLowerCase())).toEqual(['a', 'img']);
     });
 
     it("should insert a document fragment's children at the end (and not the fragment itself)", () => {
@@ -225,32 +226,35 @@ describe('node insertBefore', () => {
       const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
       const docFragment = remoteDOM.document.createDocumentFragment();
       const imgNode = docFragment.appendChild(remoteDOM.document.createElement('img'));
-      const divNode = docFragment.appendChild(remoteDOM.document.createElement('div'));
-      remoteChannel.postMessage.mockClear();
+      const spanNode = docFragment.appendChild(remoteDOM.document.createElement('span'));
+      remoteContainer.appendChild(parent);
 
       parent.insertBefore(docFragment);
 
-      expect(parent.childNodes).toEqual([aNode, imgNode, divNode]);
+      const domChildren = domContainer.children[0].children;
+      expect(parent.childNodes).toEqual([aNode, imgNode, spanNode]);
       expect(aNode.parentNode).toBe(parent);
       expect(imgNode.parentNode).toBe(parent);
-      expect(divNode.parentNode).toBe(parent);
-      expect(remoteChannel.postMessage).toHaveBeenCalledWith(createPostMessage([createSingleRemoteMessage(common.Commands.insertBefore, parent, docFragment, null)]));
+      expect(spanNode.parentNode).toBe(parent);
+      expect(Array.from(domChildren).map(child => child.tagName.toLowerCase())).toEqual(['a', 'img', 'span']);
     });
   });
 
   describe("providing a ref node", () => {
     it("should insert the new child before the ref child", () => {
       const parent = remoteDOM.document.createElement('div');
-      const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
+      const aNode = remoteDOM.document.createElement('a');
       const imgNode = remoteDOM.document.createElement('img');
-      remoteChannel.postMessage.mockClear();
+      remoteContainer.appendChild(parent);
+      parent.appendChild(aNode);
 
       parent.insertBefore(imgNode, aNode);
 
+      const domChildren = domContainer.children[0].children;
       expect(parent.childNodes).toEqual([imgNode, aNode]);
       expect(aNode.parentNode).toBe(parent);
       expect(imgNode.parentNode).toBe(parent);
-      expect(remoteChannel.postMessage).toHaveBeenCalledWith(createPostMessage([createSingleRemoteMessage(common.Commands.insertBefore, parent, imgNode, aNode)]));
+      expect(Array.from(domChildren).map(child => child.tagName.toLowerCase())).toEqual(['img', 'a']);
     });
 
     it("should insert a document fragment's children before the ref child (and not the fragment itself)", () => {
@@ -258,16 +262,17 @@ describe('node insertBefore', () => {
       const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
       const docFragment = remoteDOM.document.createDocumentFragment();
       const imgNode = docFragment.appendChild(remoteDOM.document.createElement('img'));
-      const divNode = docFragment.appendChild(remoteDOM.document.createElement('div'));
-      remoteChannel.postMessage.mockClear();
+      const spanNode = docFragment.appendChild(remoteDOM.document.createElement('span'));
+      remoteContainer.appendChild(parent);
 
       parent.insertBefore(docFragment, aNode);
 
-      expect(parent.childNodes).toEqual([imgNode, divNode, aNode]);
+      const domChildren = domContainer.children[0].children;
+      expect(parent.childNodes).toEqual([imgNode, spanNode, aNode]);
       expect(aNode.parentNode).toBe(parent);
       expect(imgNode.parentNode).toBe(parent);
-      expect(divNode.parentNode).toBe(parent);
-      expect(remoteChannel.postMessage).toHaveBeenCalledWith(createPostMessage([createSingleRemoteMessage(common.Commands.insertBefore, parent, docFragment, aNode)]));
+      expect(spanNode.parentNode).toBe(parent);
+      expect(Array.from(domChildren).map(child => child.tagName.toLowerCase())).toEqual(['img', 'span', 'a']);
     });
   });
 
@@ -276,12 +281,12 @@ describe('node insertBefore', () => {
       const parent = remoteDOM.document.createElement('div');
       const imgNode = remoteDOM.document.createElement('img');
       const aNode = remoteDOM.document.createElement('a');
-      remoteChannel.postMessage.mockClear();
+      remoteContainer.appendChild(parent);
 
       expect(() => {
         parent.insertBefore(imgNode, aNode);
       }).toThrow();
-      expect(remoteChannel.postMessage).not.toHaveBeenCalled()
+      expect(domContainer.children[0].children.length).toBe(0);
     });
   });
 });
@@ -292,28 +297,30 @@ describe('node replaceChild', () => {
       const parent = remoteDOM.document.createElement('div');
       const aNode = remoteDOM.document.createElement('a');
       parent.appendChild(remoteDOM.document.createElement('img'));
-      remoteChannel.postMessage.mockClear();
+      remoteContainer.appendChild(parent);
 
       expect(() => {
         parent.replaceChild(aNode);
       }).toThrow();
-      expect(remoteChannel.postMessage).not.toHaveBeenCalled()
+      expect(domContainer.children[0].children.length).toBe(1);
+      expect(domContainer.children[0].children[0].tagName.toLowerCase()).toBe('img');
     });
   });
 
   describe("providing a ref node", () => {
-    it("should replace the old child with the newbefore the ref child", () => {
+    it("should replace the old child with the new before the ref child", () => {
       const parent = remoteDOM.document.createElement('div');
       const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
       const imgNode = remoteDOM.document.createElement('img');
-      remoteChannel.postMessage.mockClear();
+      remoteContainer.appendChild(parent);
 
       parent.replaceChild(imgNode, aNode);
 
       expect(parent.childNodes).toEqual([imgNode]);
       expect(aNode.parentNode).toBe(null);
       expect(imgNode.parentNode).toBe(parent);
-      expect(remoteChannel.postMessage).toHaveBeenCalledWith(createPostMessage([createSingleRemoteMessage(common.Commands.replaceChild, parent, imgNode, aNode)]));
+      expect(domContainer.children[0].children.length).toBe(1);
+      expect(domContainer.children[0].children[0].tagName.toLowerCase()).toBe('img');
     });
 
     it("should replace the old child with the children of a document fragment (and not the fragment itself)", () => {
@@ -321,16 +328,18 @@ describe('node replaceChild', () => {
       const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
       const docFragment = remoteDOM.document.createDocumentFragment();
       const imgNode = docFragment.appendChild(remoteDOM.document.createElement('img'));
-      const divNode = docFragment.appendChild(remoteDOM.document.createElement('div'));
-      remoteChannel.postMessage.mockClear();
+      const spanNode = docFragment.appendChild(remoteDOM.document.createElement('span'));
+      remoteContainer.appendChild(parent);
 
       parent.replaceChild(docFragment, aNode);
 
-      expect(parent.childNodes).toEqual([imgNode, divNode]);
+      const domChildren = domContainer.children[0].children;
+      expect(parent.childNodes).toEqual([imgNode, spanNode]);
       expect(aNode.parentNode).toBe(null);
       expect(imgNode.parentNode).toBe(parent);
-      expect(divNode.parentNode).toBe(parent);
-      expect(remoteChannel.postMessage).toHaveBeenCalledWith(createPostMessage([createSingleRemoteMessage(common.Commands.replaceChild, parent, docFragment, aNode)]));
+      expect(spanNode.parentNode).toBe(parent);
+      expect(domContainer.children[0].children.length).toBe(2);
+      expect(Array.from(domChildren).map(child => child.tagName.toLowerCase())).toEqual(['img', 'span']);
     });
   });
 
@@ -339,12 +348,12 @@ describe('node replaceChild', () => {
       const parent = remoteDOM.document.createElement('div');
       const imgNode = remoteDOM.document.createElement('img');
       const aNode = remoteDOM.document.createElement('a');
-      remoteChannel.postMessage.mockClear();
+      remoteContainer.appendChild(parent);
 
       expect(() => {
         parent.replaceChild(imgNode, aNode);
       }).toThrow();
-      expect(remoteChannel.postMessage).not.toHaveBeenCalled()
+      expect(domContainer.children[0].children.length).toBe(0);
     });
   });
 });
