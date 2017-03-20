@@ -4,8 +4,9 @@ module.exports = {
     path: './dist',
     filename: "bundle.js",
     libraryTarget: 'umd',
-    library: 'remoteDom'
+    library: 'remoteDOM'
   },
+  devtool: 'source-map',
   module: {
     loaders: [ {test: /\.js$/,
       exclude: /(node_modules|bower_components)/,
