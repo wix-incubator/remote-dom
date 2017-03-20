@@ -145,4 +145,21 @@ describe('dispatchEvent', () => {
       cancelable: true
     }));
   });
+
+  it('should dispatch event on window', () => {
+    const evt = new remoteDOM.window.CustomEvent('test-event', {
+      bubbles: true,
+      cancelable: true,
+      scoped: true,
+      composed: true
+    });
+    const listenerSpy = jest.fn();
+    remoteDOM.window.addEventListener('test-event', listenerSpy);
+    env.jsdomDefaultView.window.dispatchEvent = jest.fn(); // this had to be done with a spy (opposed to the previous tests) since jsdom window does not function like a real window object
+
+    remoteDOM.window.dispatchEvent(evt);
+
+    expect(env.jsdomDefaultView.window.dispatchEvent).toHaveBeenCalled();
+    expect(env.jsdomDefaultView.window.dispatchEvent.mock.calls[0][0].type).toBe('test-event');
+  });
 });

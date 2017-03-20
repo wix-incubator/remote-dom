@@ -133,7 +133,7 @@ class RemoteNode {
   }
 
   dispatchEvent(event) {
-    queue.push([Commands.dispatchEvent, this.$index, event._type, event._eventInit, event._isCustom || false]);
+    dispatchEvent(this.$index, event);
   }
 
   set value(val) {
@@ -319,6 +319,10 @@ function removeEventListener(target, evtName, callback) {
   queue.push([Commands.removeEventListener, target, evtName, index]);
 }
 
+function dispatchEvent(target, event) {
+  queue.push([Commands.dispatchEvent, target, event._type, event._eventInit, event._isCustom || false]);
+}
+
 function handleMessagesFromPipe(messages) {
   messages.forEach(msg => {
     const evtTarget = msg[0];
@@ -382,6 +386,7 @@ class CustomEvent extends Event {
 const window = {
   Event,
   CustomEvent,
+  dispatchEvent: dispatchEvent.bind(null, Constants.WINDOW),
   addEventListener: addEventListener.bind(null, Constants.WINDOW),
   removeEventListener: removeEventListener.bind(null, Constants.WINDOW),
   document: document,
