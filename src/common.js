@@ -53,7 +53,8 @@ const Constants = {
   WINDOW: 'WINDOW',
   DEFAULT_NAME: 'DEFAULT_NAME',
   QUEUE_INDEX: 'QUEUE_INDEX',
-  NODE_INDEX: 'NODE_INDEX'
+  NODE_INDEX: 'NODE_INDEX',
+  INIT: 'INIT'
 };
 
 let index = 0;

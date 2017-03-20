@@ -201,6 +201,17 @@ function updateRemoteOnInit(queueIndex) {
       }
     }
   }]);
+
+
+  queuesByIndex[queueIndex].push([Constants.DOCUMENT, 'updateProperties', {
+    extraData: {
+      DOCUMENT: {
+        body: {
+          clientWidth: doc.body.clientWidth
+        }
+      }
+    }
+  }, Constants.INIT]);
 }
 
 function registerToWindowChanges(callback) {

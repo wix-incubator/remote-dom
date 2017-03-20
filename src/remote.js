@@ -1,6 +1,7 @@
 import {Node, Commands, Constants, MessagesQueue, StyleAttributes, EventDOMNodeAttributes, SupportedEvents, Pipe}  from './common'
 
 let index = 0;
+let containerPromiseResolver;
 
 const queue = new MessagesQueue();
 const eventsByTypeAndTarget = {};
@@ -216,7 +217,6 @@ class RemoteElement extends RemoteNode {
   }
 }
 
-
 class RemoteContainer extends RemoteElement {
   constructor() {
     super('div');
@@ -291,7 +291,13 @@ function createContainer(name) {
   const res = new RemoteContainer();
   connectedElementsByIndex[res.$index] = res;
   queue.push([Commands.createContainer, res.$index, name]);
-  return res;
+  return new Promise(resolve => {
+    if (containerPromiseResolver) {
+      resolve(res)
+    } else {
+      containerPromiseResolver = resolve.bind(undefined, res)
+    }
+  })
 }
 
 function addEventListener(target, evtName, callback, capture) {
@@ -320,8 +326,14 @@ function handleMessagesFromPipe(messages) {
     const evtTarget = msg[0];
     const evtName = msg[1];
     const evtJSON = msg[2];
+    const evtType = msg[3]
     Object.keys(evtJSON.extraData).forEach((index) => {
       if (connectedElementsByIndex[index] && evtJSON.extraData[index]) {
+        if (evtType === Constants.INIT && typeof containerPromiseResolver === 'function') {
+          containerPromiseResolver()
+        } else if (evtType === Constants.INIT) {
+           containerPromiseResolver = true
+        }
         Object.assign(connectedElementsByIndex[index], evtJSON.extraData[index]);
       }
     })

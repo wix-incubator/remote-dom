@@ -23,13 +23,16 @@ let domContainer,remoteContainer, localContainer;
 let counter = 0;
 let env;
 
-beforeEach(() => {
+beforeEach((done) => {
   env = testUtils.setup(windowOverrides);
   domContainer = env.jsdomDefaultView.document.createElement('div');
   const id = 'container_' + counter++;
   env.jsdomDefaultView.document.body.appendChild(domContainer);
   localContainer = localDOM.createContainer(env.localQueue, domContainer, id);
-  remoteContainer = remoteDOM.createContainer(id);
+  remoteDOM.createContainer(id).then(container => {
+    remoteContainer = container
+    done()
+  })
 });
 
 it('native innerHTML', () => {
