@@ -4,7 +4,7 @@ import * as remoteDOM from '../remote';
 import * as localDOM from '../local';
 import testUtils from './testUtils';
 
-let domContainer, remoteContainer, localContainer;
+let domContainer, remoteContainer;
 let counter = 0;
 let env;
 
@@ -14,7 +14,7 @@ describe('video tests', () => {
     domContainer = env.jsdomDefaultView.document.createElement('div');
     const id = 'container_' + counter++;
     env.jsdomDefaultView.document.body.appendChild(domContainer);
-    localContainer = localDOM.createContainer(env.localQueue, domContainer, id);
+    localDOM.createContainer(env.localQueue, domContainer, id);
     remoteContainer = remoteDOM.createContainer(id);
   });
 
@@ -25,7 +25,7 @@ describe('video tests', () => {
       expect(videoNode.src).toBe(vidSrc);
       done();
     };
-    const statelessComp = (props) => (<video ref={expectFunc}></video>);
+    const statelessComp = () => (<video ref={expectFunc}></video>);
     ReactDOM.render(React.createElement(statelessComp), remoteContainer);
   });
 
@@ -37,7 +37,7 @@ describe('video tests', () => {
       expect(localVideoElement.src).toBe(vidSrc);
       done();
     };
-    const statelessComp = (props) => (<video ref={expectFunc}></video>);
+    const statelessComp = () => (<video ref={expectFunc}></video>);
     ReactDOM.render(React.createElement(statelessComp), remoteContainer);
   });
 

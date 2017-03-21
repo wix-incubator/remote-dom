@@ -1,0 +1,21 @@
+{
+    "extends": "eslint:recommended",
+    "plugins": [
+        "standard",
+        "promise"
+    ],
+    "env": {
+        "es6": true,
+        "jest": true
+    },
+    "rules": {
+        "no-var": "error",
+        "semi": ["error", "always"]
+    },
+    "parserOptions": {
+        "sourceType": "module",
+        "ecmaFeatures": {
+            "jsx": true
+        }
+    }
+}
