@@ -116,3 +116,183 @@ describe('initialization', () => {
     expect(env.jsdomDefaultView.window.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
   });
 });
+
+describe('node appendChild', () => {
+  it("should put the new child at the end and update the child's parent", () => {
+    const parent = remoteDOM.document.createElement('div');
+
+    const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
+    const imgNode = parent.appendChild(remoteDOM.document.createElement('img'));
+
+    expect(parent.childNodes).toEqual([aNode, imgNode]);
+    expect(aNode.parentNode).toBe(parent);
+    expect(imgNode.parentNode).toBe(parent);
+  });
+
+  it("should append the children of a document fragment and update the children's parents", () => {
+    const parent = remoteDOM.document.createElement('div');
+    const docFragment = remoteDOM.document.createDocumentFragment();
+    const aNode = docFragment.appendChild(remoteDOM.document.createElement('a'));
+    const imgNode = docFragment.appendChild(remoteDOM.document.createElement('img'));
+
+    parent.appendChild(docFragment);
+
+    expect(parent.childNodes).toEqual([aNode, imgNode]);
+    expect(aNode.parentNode).toBe(parent);
+    expect(imgNode.parentNode).toBe(parent);
+  });
+});
+
+describe('node insertBefore', () => {
+  describe("not providing a ref node", () => {
+    it("should insert the new child at the end", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
+      const imgNode = remoteDOM.document.createElement('img');
+      remoteContainer.appendChild(parent);
+
+      parent.insertBefore(imgNode);
+
+      const domChildren = domContainer.children[0].children;
+      expect(parent.childNodes).toEqual([aNode, imgNode]);
+      expect(aNode.parentNode).toBe(parent);
+      expect(imgNode.parentNode).toBe(parent);
+      expect(Array.from(domChildren).map(child => child.tagName.toLowerCase())).toEqual(['a', 'img']);
+    });
+
+    it("should insert a document fragment's children at the end (and not the fragment itself)", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
+      const docFragment = remoteDOM.document.createDocumentFragment();
+      const imgNode = docFragment.appendChild(remoteDOM.document.createElement('img'));
+      const spanNode = docFragment.appendChild(remoteDOM.document.createElement('span'));
+      remoteContainer.appendChild(parent);
+
+      parent.insertBefore(docFragment);
+
+      const domChildren = domContainer.children[0].children;
+      expect(parent.childNodes).toEqual([aNode, imgNode, spanNode]);
+      expect(aNode.parentNode).toBe(parent);
+      expect(imgNode.parentNode).toBe(parent);
+      expect(spanNode.parentNode).toBe(parent);
+      expect(Array.from(domChildren).map(child => child.tagName.toLowerCase())).toEqual(['a', 'img', 'span']);
+    });
+  });
+
+  describe("providing a ref node", () => {
+    it("should insert the new child before the ref child", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const aNode = remoteDOM.document.createElement('a');
+      const imgNode = remoteDOM.document.createElement('img');
+      remoteContainer.appendChild(parent);
+      parent.appendChild(aNode);
+
+      parent.insertBefore(imgNode, aNode);
+
+      const domChildren = domContainer.children[0].children;
+      expect(parent.childNodes).toEqual([imgNode, aNode]);
+      expect(aNode.parentNode).toBe(parent);
+      expect(imgNode.parentNode).toBe(parent);
+      expect(Array.from(domChildren).map(child => child.tagName.toLowerCase())).toEqual(['img', 'a']);
+    });
+
+    it("should insert a document fragment's children before the ref child (and not the fragment itself)", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
+      const docFragment = remoteDOM.document.createDocumentFragment();
+      const imgNode = docFragment.appendChild(remoteDOM.document.createElement('img'));
+      const spanNode = docFragment.appendChild(remoteDOM.document.createElement('span'));
+      remoteContainer.appendChild(parent);
+
+      parent.insertBefore(docFragment, aNode);
+
+      const domChildren = domContainer.children[0].children;
+      expect(parent.childNodes).toEqual([imgNode, spanNode, aNode]);
+      expect(aNode.parentNode).toBe(parent);
+      expect(imgNode.parentNode).toBe(parent);
+      expect(spanNode.parentNode).toBe(parent);
+      expect(Array.from(domChildren).map(child => child.tagName.toLowerCase())).toEqual(['img', 'span', 'a']);
+    });
+  });
+
+  describe("providing a ref node that is not a child of the parent node", () => {
+    it("should throw error and not send a message", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const imgNode = remoteDOM.document.createElement('img');
+      const aNode = remoteDOM.document.createElement('a');
+      remoteContainer.appendChild(parent);
+
+      expect(() => {
+        parent.insertBefore(imgNode, aNode);
+      }).toThrow();
+      expect(domContainer.children[0].children.length).toBe(0);
+    });
+  });
+});
+
+describe('node replaceChild', () => {
+  describe("not providing a ref node", () => {
+    it("should throw error and not send a message", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const aNode = remoteDOM.document.createElement('a');
+      parent.appendChild(remoteDOM.document.createElement('img'));
+      remoteContainer.appendChild(parent);
+
+      expect(() => {
+        parent.replaceChild(aNode);
+      }).toThrow();
+      expect(domContainer.children[0].children.length).toBe(1);
+      expect(domContainer.children[0].children[0].tagName.toLowerCase()).toBe('img');
+    });
+  });
+
+  describe("providing a ref node", () => {
+    it("should replace the old child with the new before the ref child", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
+      const imgNode = remoteDOM.document.createElement('img');
+      remoteContainer.appendChild(parent);
+
+      parent.replaceChild(imgNode, aNode);
+
+      expect(parent.childNodes).toEqual([imgNode]);
+      expect(aNode.parentNode).toBe(null);
+      expect(imgNode.parentNode).toBe(parent);
+      expect(domContainer.children[0].children.length).toBe(1);
+      expect(domContainer.children[0].children[0].tagName.toLowerCase()).toBe('img');
+    });
+
+    it("should replace the old child with the children of a document fragment (and not the fragment itself)", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
+      const docFragment = remoteDOM.document.createDocumentFragment();
+      const imgNode = docFragment.appendChild(remoteDOM.document.createElement('img'));
+      const spanNode = docFragment.appendChild(remoteDOM.document.createElement('span'));
+      remoteContainer.appendChild(parent);
+
+      parent.replaceChild(docFragment, aNode);
+
+      const domChildren = domContainer.children[0].children;
+      expect(parent.childNodes).toEqual([imgNode, spanNode]);
+      expect(aNode.parentNode).toBe(null);
+      expect(imgNode.parentNode).toBe(parent);
+      expect(spanNode.parentNode).toBe(parent);
+      expect(domContainer.children[0].children.length).toBe(2);
+      expect(Array.from(domChildren).map(child => child.tagName.toLowerCase())).toEqual(['img', 'span']);
+    });
+  });
+
+  describe("providing a ref node that is not a child of the parent node", () => {
+    it("should throw error and not send a message", () => {
+      const parent = remoteDOM.document.createElement('div');
+      const imgNode = remoteDOM.document.createElement('img');
+      const aNode = remoteDOM.document.createElement('a');
+      remoteContainer.appendChild(parent);
+
+      expect(() => {
+        parent.replaceChild(imgNode, aNode);
+      }).toThrow();
+      expect(domContainer.children[0].children.length).toBe(0);
+    });
+  });
+});
