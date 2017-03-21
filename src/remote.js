@@ -321,32 +321,41 @@ function removeEventListener(target, evtName, callback) {
   queue.push([Commands.removeEventListener, target, evtName, index]);
 }
 
+function updateConnectedElement(index, eventData) {
+  if (connectedElementsByIndex[index] && eventData[index]) {
+    Object.assign(connectedElementsByIndex[index], eventData[index]);
+  }
+}
+
 function handleMessagesFromPipe(messages) {
   messages.forEach(msg => {
-    const evtTarget = msg[0];
-    const evtName = msg[1];
-    const evtJSON = msg[2];
-    const evtType = msg[3]
-    Object.keys(evtJSON.extraData).forEach((index) => {
-      if (connectedElementsByIndex[index] && evtJSON.extraData[index]) {
-        if (evtType === Constants.INIT && typeof containerPromiseResolver === 'function') {
-          containerPromiseResolver()
-        } else if (evtType === Constants.INIT) {
-           containerPromiseResolver = true
-        }
-        Object.assign(connectedElementsByIndex[index], evtJSON.extraData[index]);
-      }
-    })
-    EventDOMNodeAttributes.forEach((field) => {
-      evtJSON[field] = (evtJSON[field] instanceof Array) ? evtJSON[field].map(val => connectedElementsByIndex[val]) : connectedElementsByIndex[evtJSON[field]];
-    });
-    // console.log(evtJSON);
+    const evtIntent = msg[0];
+    switch (evtIntent) {
+      case Constants.INIT:
+        (typeof containerPromiseResolver === 'function') ? containerPromiseResolver() : containerPromiseResolver = true
+        const eventData = msg[1];
+        Object.keys(eventData).forEach((index) => {
+          updateConnectedElement(index, eventData)
+        })
+        break;
+      default:
+        const evtTarget = msg[1];
+        const evtName = msg[2];
+        const evtJSON = msg[3];
+        Object.keys(evtJSON.extraData).forEach((index) => {
+          updateConnectedElement(index, evtJSON.extraData)
+        })
+        EventDOMNodeAttributes.forEach((field) => {
+          evtJSON[field] = (evtJSON[field] instanceof Array) ? evtJSON[field].map(val => connectedElementsByIndex[val]) : connectedElementsByIndex[evtJSON[field]];
+        });
+        // console.log(evtJSON);
 
-    if (eventsByTypeAndTarget[evtName] && eventsByTypeAndTarget[evtName][evtTarget]) {
-      Object.keys(eventsByTypeAndTarget[evtName][evtTarget]).forEach((callbackIndex) => {
-        eventsByTypeAndTarget[evtName][evtTarget][callbackIndex](evtJSON);
-      })
-    }
+        if (eventsByTypeAndTarget[evtName] && eventsByTypeAndTarget[evtName][evtTarget]) {
+          Object.keys(eventsByTypeAndTarget[evtName][evtTarget]).forEach((callbackIndex) => {
+            eventsByTypeAndTarget[evtName][evtTarget][callbackIndex](evtJSON);
+          })
+        }
+      }
   });
 }
 
