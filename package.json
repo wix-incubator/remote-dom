@@ -7,6 +7,7 @@
     "demo": "node node_modules/http-server/bin/http-server -c-1",
     "pretest": "npm run lint",
     "test": "node node_modules/jest/bin/jest.js --coverage",
+    "pretest-build": "npm run lint",
     "test-build": "node node_modules/jest/bin/jest.js --coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
     "coverage": "node node_modules/jest/bin/jest.js --coverage",
     "prebuild": "npm run lint && npm run test",
