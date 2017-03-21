@@ -70,7 +70,7 @@ function generalEventHandler(queueIndex, evtTarget, evtName, ev) {
   }
 
 
-  queuesByIndex[queueIndex].push([evtTarget, evtName, evtJSON]);
+  queuesByIndex[queueIndex].push([Constants.EVENT, evtTarget, evtName, evtJSON]);
   // console.log('evtJSON',evtJSON.type, evtJSON);
   if (evtName === 'submit') {
     ev.preventDefault();
@@ -182,36 +182,28 @@ function handleRemoteInit(queueIndex) {
 }
 
 function updateRemoteOnInit(queueIndex) {
-  queuesByIndex[queueIndex].push([Constants.WINDOW, 'updateProperties', {
-    extraData: {
-      WINDOW: {
-        screen: {
-          width: win.screen.width,
-          height: win.screen.height,
-          deviceXDPI: win.screen.deviceXDPI,
-          logicalXDPI: win.screen.logicalXDPI,
-          orientation: {
-            angle: win.screen.orientation && win.screen.orientation.angle,
-            type: win.screen.orientation && win.screen.orientation.type
-          }
-        },
-        devicePixelRatio: win.devicePixelRatio,
-        innerWidth: win.innerWidth,
-        innerHeight: win.innerHeight
-      }
-    }
-  }]);
-
-
-  queuesByIndex[queueIndex].push([Constants.DOCUMENT, 'updateProperties', {
-    extraData: {
-      DOCUMENT: {
-        body: {
-          clientWidth: doc.body.clientWidth
+  queuesByIndex[queueIndex].push([Constants.INIT, {
+    WINDOW: {
+      screen: {
+        width: win.screen.width,
+        height: win.screen.height,
+        deviceXDPI: win.screen.deviceXDPI,
+        logicalXDPI: win.screen.logicalXDPI,
+        orientation: {
+          angle: win.screen.orientation && win.screen.orientation.angle,
+          type: win.screen.orientation && win.screen.orientation.type
         }
+      },
+      devicePixelRatio: win.devicePixelRatio,
+      innerWidth: win.innerWidth,
+      innerHeight: win.innerHeight
+    },
+    DOCUMENT: {
+      body: {
+        clientWidth: doc.body.clientWidth
       }
     }
-  }, Constants.INIT]);
+  }])
 }
 
 function registerToWindowChanges(callback) {
