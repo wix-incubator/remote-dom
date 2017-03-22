@@ -383,7 +383,8 @@ const document = {
   createDocumentFragment,
   addEventListener: addEventListener.bind(null, Constants.DOCUMENT),
   removeEventListener: removeEventListener.bind(null, Constants.DOCUMENT),
-  documentElement: new RemoteElement('html')
+  documentElement: new RemoteElement('html'),
+  dispatchEvent: dispatchEvent.bind(null, Constants.DOCUMENT)
 };
 
 SupportedEvents.forEach((e) => {
