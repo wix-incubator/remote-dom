@@ -51,6 +51,7 @@ function serializeEventVal (queueIndex, val) {
   } else if (typeof val === 'function') {
     return null;
   }
+  return val;
 }
 
 function generalEventHandler (queueIndex, evtTarget, evtName, ev) {

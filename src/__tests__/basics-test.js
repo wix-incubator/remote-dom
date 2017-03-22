@@ -307,10 +307,9 @@ describe('dispatchEvent', () => {
   it('should dispatch a custom event with the requested type and init params', () => {
     const divNode = remoteDOM.document.createElement('div');
     const evt = new remoteDOM.window.CustomEvent('test-event', {
-      bubbles: true,
-      cancelable: true,
-      scoped: true,
-      composed: true
+      detail: {
+        foo: 'bar'
+      }
     });
     const listenerSpy = jest.fn();
     remoteContainer.appendChild(divNode);
@@ -320,8 +319,9 @@ describe('dispatchEvent', () => {
 
     expect(listenerSpy).toHaveBeenCalledWith(expect.objectContaining({
       type: 'test-event',
-      bubbles: true,
-      cancelable: true
+      detail: {
+        foo: 'bar'
+      }
     }));
   });
 
