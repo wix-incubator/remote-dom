@@ -1,14 +1,7 @@
-const React = require('react');
-const ReactDOM = require('react-dom');
 const remoteDOM = require('../remote');
 const localDOM = require('../local');
 
-global.document = remoteDOM.document;
-global.window = remoteDOM.window;
-global.navigator = {userAgent: 'Chrome'};
-console.debug = console.log.bind(console);
-
-function setup(windowOverrides) {
+function setup (windowOverrides) {
   const jsdom = require('jsdom');
   const jsdomDefaultView = jsdom.jsdom({
     features: {
@@ -18,19 +11,18 @@ function setup(windowOverrides) {
   }).defaultView;
 
   Object.assign(jsdomDefaultView.window, windowOverrides);
-  localDOM.setWindow(jsdomDefaultView.window)
+  localDOM.setWindow(jsdomDefaultView.window);
 
   let localHandler = null;
   let remoteHandler = null;
-  function syncTimeout(cb) {
+  function syncTimeout (cb) {
     cb();
   }
 
   const nativeInvocationMock = jest.fn();
 
   const localQueue = localDOM.createMessageQueue({
-    postMessage: function(message) {
-      //console.log(message);
+    postMessage: function (message) {
       if (remoteHandler) {
         remoteHandler({data: message});
       }
@@ -42,12 +34,11 @@ function setup(windowOverrides) {
 
   remoteDOM.setChannel({
     postMessage: function (message) {
-      //console.log(message);
       if (localHandler) {
         localHandler({data: message});
       }
     },
-    addEventListener: function(msgType, handler) {
+    addEventListener: function (msgType, handler) {
       remoteHandler = handler;
     }
   }, syncTimeout);
@@ -59,6 +50,6 @@ function setup(windowOverrides) {
   };
 }
 
-module.exports = {
-    setup
-}
+export default {
+  setup
+};
