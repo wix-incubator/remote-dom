@@ -1,4 +1,6 @@
-import {Node, Commands, Constants, MessagesQueue, StyleAttributes, EventDOMNodeAttributes, SupportedEvents, Pipe}  from './common'
+/* eslint-env worker */
+
+import {Node, Commands, Constants, MessagesQueue, StyleAttributes, EventDOMNodeAttributes, SupportedEvents} from './common';
 
 let index = 0;
 
@@ -7,7 +9,7 @@ const eventsByTypeAndTarget = {};
 const connectedElementsByIndex = {};
 
 class RemoteStyle {
-  constructor($index) {
+  constructor ($index) {
     this.$index = $index;
     this.$values = {};
   }
@@ -22,29 +24,29 @@ StyleAttributes.forEach((k) => {
     get: function () {
       return this.$values[k];
     }
-  })
-})
-
+  });
+});
 
 class RemoteNode {
-  constructor(nodeType) {
+  constructor (nodeType, val) {
     index++;
     this.nodeType = nodeType;
     this.$index = index;
     this.$host = null;
     this.parentNode = null;
     this.childNodes = [];
+    this.$value = val;
   }
 
-  get children() {
+  get children () {
     return this.childNodes;
   }
 
-  get firstChild() {
+  get firstChild () {
     return this.childNodes[0];
   }
 
-  get nextSibling() {
+  get nextSibling () {
     if (!this.parentNode) {
       return null;
     }
@@ -55,7 +57,7 @@ class RemoteNode {
     return this.parentNode.childNodes[idx + 1];
   }
 
-  get prevSibling() {
+  get prevSibling () {
     if (!this.parentNode) {
       return null;
     }
@@ -66,14 +68,14 @@ class RemoteNode {
     return this.parentNode.childNodes[idx - 1];
   }
 
-  get ownerDocument() {
-    return document
+  get ownerDocument () {
+    return document;
   }
 
-  set innerHTML(val) {
+  set innerHTML (val) {
   }
 
-  set host(host) {
+  set host (host) {
     if (Boolean(host) === Boolean(this.$host)) {
       return;
     }
@@ -84,11 +86,11 @@ class RemoteNode {
       delete connectedElementsByIndex[this.$index];
     }
     this.childNodes.forEach((child) => {
-      child.host = host
+      child.host = host;
     });
   }
 
-  appendChild(child) {
+  appendChild (child) {
     queue.push([Commands.appendChild, this.$index, child.$index]);
 
     const childrenToAppend = child.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? child.childNodes : [child];
@@ -101,10 +103,10 @@ class RemoteNode {
     return child;
   }
 
-  insertBefore(child, refChild) {
+  insertBefore (child, refChild) {
     const idx = refChild ? this.childNodes.indexOf(refChild) : this.childNodes.length;
     if (idx === -1) {
-      throw new Error("Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.")
+      throw new Error("Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.");
     }
 
     queue.push([Commands.insertBefore, this.$index, child.$index, refChild ? refChild.$index : null]);
@@ -119,7 +121,7 @@ class RemoteNode {
     return child;
   }
 
-  removeChild(child) {
+  removeChild (child) {
     queue.push([Commands.removeChild, this.$index, child.$index]);
     const idx = this.childNodes.indexOf(child);
     if (idx !== -1) {
@@ -128,7 +130,7 @@ class RemoteNode {
     child.host = null;
   }
 
-  replaceChild(newChild, oldChild) {
+  replaceChild (newChild, oldChild) {
     const idx = this.childNodes.indexOf(oldChild);
     if (idx === -1) {
       throw new Error("Failed to execute 'replaceChild' on 'Node': The node to be replaced is not a child of this node.");
@@ -146,169 +148,172 @@ class RemoteNode {
     oldChild.host = null;
   }
 
-  addEventListener(evtType, callback, capture) {
+  addEventListener (evtType, callback, capture) {
     addEventListener(this.$index, evtType, callback, capture);
   }
 
-  removeEventListener(evtType, callback) {
+  removeEventListener (evtType, callback) {
     removeEventListener(this.$index, evtType, callback);
   }
 
-  set value(val) {
+  dispatchEvent (event) {
+    dispatchEvent(this.$index, event);
+  }
+
+  set value (val) {
     this.$value = val;
     queue.push([Commands.setValue, this.$index, val]);
   }
 
-  get value() {
+  get value () {
     return this.$value;
   }
 
-  get textContent() {
+  get textContent () {
     return this.$textContent;
   }
 
-  set textContent(val) {
+  set textContent (val) {
     queue.push([Commands.textContent, this.$index, val]);
   }
 
-  invokeNative(name, args) {
+  invokeNative (name, args) {
     queue.push([Commands.invokeNative, this.$index, name, args]);
   }
 }
 
 class RemoteTextualNode extends RemoteNode {
-  constructor(val) {
-    super(Node.TEXT_NODE);
+  constructor (text) {
+    super(Node.TEXT_NODE, text);
   }
 
-  set nodeValue(val) {
+  set nodeValue (val) {
     queue.push([Commands.textContent, this.$index, val]);
   }
 }
 
 class RemoteComment extends RemoteTextualNode {
-  constructor(val) {
-    super(Node.COMMENT_NODE, val);
+  constructor (text) {
+    super(Node.COMMENT_NODE, text);
   }
 }
 
 class RemoteText extends RemoteTextualNode {
-  constructor(val) {
-    super(Node.TEXT_NODE, val);
+  constructor (text) {
+    super(Node.TEXT_NODE, text);
   }
 }
 
 class RemoteElement extends RemoteNode {
-  constructor(tagName) {
+  constructor (tagName) {
     super(Node.ELEMENT_NODE);
     this.tagName = tagName.toUpperCase();
     this.$style = new RemoteStyle(this.$index);
     this.$attr = {};
   }
 
-  get nodeName() {
+  get nodeName () {
     return this.tagName;
   }
 
-  setAttribute(k, v) {
+  setAttribute (k, v) {
     queue.push([Commands.setAttribute, this.$index, k, v]);
     this.$attr[k] = {name: k, value: v};
     this[k] = v;
   }
 
-  removeAttribute(k) {
+  removeAttribute (k) {
     queue.push([Commands.removeAttribute, this.$index, k]);
     delete this.$attr[k];
   }
 
-  get style() {
+  get style () {
     return this.$style;
   }
 
-  set style(val) {
+  set style (val) {
     queue.push([Commands.setStyle, this.$index, val]);
   }
 
-  set innerHTML(val) {
+  set innerHTML (val) {
     queue.push([Commands.innerHTML, this.$index, val]);
   }
 
-  set innerText(val) {
+  set innerText (val) {
     queue.push([Commands.innerText, this.$index, val]);
   }
 }
 
-
 class RemoteContainer extends RemoteElement {
-  constructor() {
+  constructor () {
     super('div');
     this.$host = this.$index;
   }
 }
 
 class RemoteFragment extends RemoteNode {
-  constructor() {
+  constructor () {
     super(Node.DOCUMENT_FRAGMENT_NODE);
   }
 }
 
 class RemoteVideo extends RemoteElement {
-    constructor() {
-        super('video');
-    }
+  constructor () {
+    super('video');
+  }
 
-    pause() {
-      queue.push([Commands.pause, this.$index]);
-    }
+  pause () {
+    queue.push([Commands.pause, this.$index]);
+  }
 
-    play() {
-      queue.push([Commands.play, this.$index]);
-    }
+  play () {
+    queue.push([Commands.play, this.$index]);
+  }
 
-    get src() {
-      return this.$src;
-    }
+  get src () {
+    return this.$src;
+  }
 
-    set src(value) {
-      this.$src =  value;
-      queue.push([Commands.src, this.$index, value]);
-    }
+  set src (value) {
+    this.$src = value;
+    queue.push([Commands.src, this.$index, value]);
+  }
 }
 
-function createElement(tagName) {
-  if (tagName === 'video') {
-    return createVideoNode()
+function createElement (nodeName) {
+  if (nodeName === 'video') {
+    return createVideoNode();
   }
-  const res = new RemoteElement(tagName);
+  const res = new RemoteElement(nodeName);
   queue.push([Commands.createElement, res.$index, res.tagName]);
   return res;
 }
 
-function createTextNode(val) {
-  const res = new RemoteText();
-  queue.push([Commands.createTextNode, res.$index, val]);
+function createTextNode (text) {
+  const res = new RemoteText(text);
+  queue.push([Commands.createTextNode, res.$index, text]);
   return res;
 }
 
-function createComment(val) {
-  const res = new RemoteNode();
-  queue.push([Commands.createComment, res.$index, val]);
+function createComment (text) {
+  const res = new RemoteComment(text);
+  queue.push([Commands.createComment, res.$index, text]);
   return res;
 }
 
-function createVideoNode() {
+function createVideoNode () {
   const res = new RemoteVideo();
   queue.push([Commands.createElement, res.$index, res.tagName]);
   return res;
 }
 
-function createDocumentFragment() {
-    const res = new RemoteFragment();
-    queue.push([Commands.createDocumentFragment, res.$index]);
-    return res;
+function createDocumentFragment () {
+  const res = new RemoteFragment();
+  queue.push([Commands.createDocumentFragment, res.$index]);
+  return res;
 }
 
-function createContainer(name) {
+function createContainer (name) {
   name = name || Constants.DEFAULT_NAME;
   const res = new RemoteContainer();
   connectedElementsByIndex[res.$index] = res;
@@ -316,17 +321,15 @@ function createContainer(name) {
   return res;
 }
 
-function addEventListener(target, evtName, callback, capture) {
+function addEventListener (target, evtName, callback, capture) {
   index++;
-  //console.log('addEventListener', target, evtName);
   eventsByTypeAndTarget[evtName] = eventsByTypeAndTarget[evtName] || {};
   eventsByTypeAndTarget[evtName][target] = eventsByTypeAndTarget[evtName][target] || {};
   eventsByTypeAndTarget[evtName][target][index] = callback;
   queue.push([Commands.addEventListener, target, evtName, index, capture]);
 }
 
-function removeEventListener(target, evtName, callback) {
-  // console.log('addEventListener', target, evtName);
+function removeEventListener (target, evtName, callback) {
   eventsByTypeAndTarget[evtName] = eventsByTypeAndTarget[evtName] || {};
   eventsByTypeAndTarget[evtName][target] = eventsByTypeAndTarget[evtName][target] || {};
   const evts = eventsByTypeAndTarget[evtName][target];
@@ -337,7 +340,11 @@ function removeEventListener(target, evtName, callback) {
   queue.push([Commands.removeEventListener, target, evtName, index]);
 }
 
-function handleMessagesFromPipe(messages) {
+function dispatchEvent (target, event) {
+  queue.push([Commands.dispatchEvent, target, event._type, event._eventInit, event._isCustom || false]);
+}
+
+function handleMessagesFromPipe (messages) {
   messages.forEach(msg => {
     const evtTarget = msg[0];
     const evtName = msg[1];
@@ -346,7 +353,7 @@ function handleMessagesFromPipe(messages) {
       if (connectedElementsByIndex[index] && evtJSON.extraData[index]) {
         Object.assign(connectedElementsByIndex[index], evtJSON.extraData[index]);
       }
-    })
+    });
     EventDOMNodeAttributes.forEach((field) => {
       evtJSON[field] = (evtJSON[field] instanceof Array) ? evtJSON[field].map(val => connectedElementsByIndex[val]) : connectedElementsByIndex[evtJSON[field]];
     });
@@ -355,17 +362,17 @@ function handleMessagesFromPipe(messages) {
     if (eventsByTypeAndTarget[evtName] && eventsByTypeAndTarget[evtName][evtTarget]) {
       Object.keys(eventsByTypeAndTarget[evtName][evtTarget]).forEach((callbackIndex) => {
         eventsByTypeAndTarget[evtName][evtTarget][callbackIndex](evtJSON);
-      })
+      });
     }
   });
 }
 
-function setChannel(channel, timerFunction) {
+function setChannel (channel, timerFunction) {
   queue.setPipe(channel, handleMessagesFromPipe, timerFunction);
   onInit();
 }
 
-function onInit() {
+function onInit () {
   queue.push([Commands.initiated]);
 }
 
@@ -376,31 +383,48 @@ const document = {
   createDocumentFragment,
   addEventListener: addEventListener.bind(null, Constants.DOCUMENT),
   removeEventListener: removeEventListener.bind(null, Constants.DOCUMENT),
-  documentElement: new RemoteElement('html')
+  documentElement: new RemoteElement('html'),
+  dispatchEvent: dispatchEvent.bind(null, Constants.DOCUMENT)
 };
 
 SupportedEvents.forEach((e) => {
   document[e] = addEventListener.bind(null, Constants.DOCUMENT, e.substr(2));
 });
 
-var window = {
+class Event {
+  constructor (typeArg, eventInit) {
+    this._type = typeArg;
+    this._eventInit = eventInit;
+  }
+}
+
+class CustomEvent extends Event {
+  constructor (typeArg, customEventInit) {
+    super(typeArg, customEventInit);
+    this._isCustom = true;
+  }
+}
+
+const window = {
+  Event,
+  CustomEvent,
+  dispatchEvent: dispatchEvent.bind(null, Constants.WINDOW),
   addEventListener: addEventListener.bind(null, Constants.WINDOW),
   removeEventListener: removeEventListener.bind(null, Constants.WINDOW),
   document: document,
   location: {href: 'https://localhost', protocol: 'https:'},
   navigator: {
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.98 Safari/537.36'
-  },
-  top: window
-}
+  }
+};
+window.top = window;
 
 connectedElementsByIndex[Constants.WINDOW] = window;
 connectedElementsByIndex[Constants.DOCUMENT] = document;
 
-
-module.exports = {
+export {
   document,
   window,
   createContainer,
   setChannel
-}
+};

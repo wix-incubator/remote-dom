@@ -19,7 +19,7 @@ const windowOverrides = {
   addEventListener: jest.fn()
 };
 
-let domContainer,remoteContainer, localContainer;
+let domContainer, remoteContainer;
 let counter = 0;
 let env;
 
@@ -28,7 +28,7 @@ beforeEach(() => {
   domContainer = env.jsdomDefaultView.document.createElement('div');
   const id = 'container_' + counter++;
   env.jsdomDefaultView.document.body.appendChild(domContainer);
-  localContainer = localDOM.createContainer(env.localQueue, domContainer, id);
+  localDOM.createContainer(env.localQueue, domContainer, id);
   remoteContainer = remoteDOM.createContainer(id);
 });
 
@@ -44,54 +44,53 @@ it('native textContent', () => {
 
 it('basic react stateless comp', () => {
   const statelessComp = (props) => (<span>hello {props.name}</span>);
-  ReactDOM.render(React.createElement(statelessComp, {name:'world'}), remoteContainer);
+  ReactDOM.render(React.createElement(statelessComp, {name: 'world'}), remoteContainer);
   expect(domContainer.textContent).toBe('hello world');
 });
 
-
 it('dangerouslySetInnerHTML prop', () => {
   const statelessComp = (props) => (<span dangerouslySetInnerHTML={{__html: props.name}}></span>);
-  ReactDOM.render(React.createElement(statelessComp, {name:'hello world'}), remoteContainer);
+  ReactDOM.render(React.createElement(statelessComp, {name: 'hello world'}), remoteContainer);
   expect(domContainer.textContent).toBe('hello world');
 });
 
 it('native invocation', () => {
-    const statelessComp = (props) => (<span ref={(span)=> {
-        span.invokeNative('native', true)
-    }}>hello {props.name}</span>);
-    ReactDOM.render(React.createElement(statelessComp, {name:'world'}), remoteContainer);
-    expect(domContainer.textContent).toBe('hello world');
-    expect(env.nativeInvocationMock).toHaveBeenLastCalledWith(domContainer.firstChild, true);
+  const statelessComp = (props) => (<span ref={(span) => {
+    span.invokeNative('native', true);
+  }}>hello {props.name}</span>);
+  ReactDOM.render(React.createElement(statelessComp, {name: 'world'}), remoteContainer);
+  expect(domContainer.textContent).toBe('hello world');
+  expect(env.nativeInvocationMock).toHaveBeenLastCalledWith(domContainer.firstChild, true);
 });
 
 it('event click', () => {
-    const clickHandler = jest.fn();
-    const statelessComp = (props) => (<span onClick={clickHandler}>hello {props.name}</span>);
-    ReactDOM.render(React.createElement(statelessComp, {name:'world'}), remoteContainer);
-    expect(domContainer.textContent).toBe('hello world');
-    expect(clickHandler).not.toHaveBeenCalled();
-    domContainer.firstChild.click();
-    expect(clickHandler).toHaveBeenCalled();
-})
+  const clickHandler = jest.fn();
+  const statelessComp = (props) => (<span onClick={clickHandler}>hello {props.name}</span>);
+  ReactDOM.render(React.createElement(statelessComp, {name: 'world'}), remoteContainer);
+  expect(domContainer.textContent).toBe('hello world');
+  expect(clickHandler).not.toHaveBeenCalled();
+  domContainer.firstChild.click();
+  expect(clickHandler).toHaveBeenCalled();
+});
 
 it('node removeAttribute', () => {
-    const statelessComp = (props) => (<span style={{width: props.width}}>hello {props.name}</span>)
-    ReactDOM.render(React.createElement(statelessComp, {width:'200px'}), remoteContainer)
-    expect(domContainer.firstChild.attributes[1].value).toBe('width: 200px;')
-    remoteContainer.firstChild.removeAttribute('style')
-    expect(domContainer.firstChild.attributes[1]).toBeUndefined()
-})
+  const statelessComp = (props) => (<span style={{width: props.width}}>hello {props.name}</span>);
+  ReactDOM.render(React.createElement(statelessComp, {width: '200px'}), remoteContainer);
+  expect(domContainer.firstChild.attributes[1].value).toBe('width: 200px;');
+  remoteContainer.firstChild.removeAttribute('style');
+  expect(domContainer.firstChild.attributes[1]).toBeUndefined();
+});
 
 it('node replaceChild', () => {
-    const statelessComp = (props) => (<div><span>hello span 1</span><span>hello span 2</span></div>)
-    ReactDOM.render(React.createElement(statelessComp), remoteContainer)
-    const children = remoteContainer.children[0].children
-    remoteContainer.children[0].replaceChild(children[1], children[0])
-    expect(domContainer.textContent).toBe('hello span 2')
-})
+  const statelessComp = () => (<div><span>hello span 1</span><span>hello span 2</span></div>);
+  ReactDOM.render(React.createElement(statelessComp), remoteContainer);
+  const children = remoteContainer.children[0].children;
+  remoteContainer.children[0].replaceChild(children[1], children[0]);
+  expect(domContainer.textContent).toBe('hello span 2');
+});
 
 describe('initialization', () => {
-  it('should update remote window properties from actual local window on initialization', function() {
+  it('should update remote window properties from actual local window on initialization', function () {
     const windowOverridesWithoutMethods = Object.assign({}, windowOverrides);
     delete windowOverridesWithoutMethods.addEventListener;
     expect(remoteDOM.window).toMatchObject(windowOverridesWithoutMethods);
@@ -130,8 +129,8 @@ describe('node appendChild', () => {
 });
 
 describe('node insertBefore', () => {
-  describe("not providing a ref node", () => {
-    it("should insert the new child at the end", () => {
+  describe('not providing a ref node', () => {
+    it('should insert the new child at the end', () => {
       const parent = remoteDOM.document.createElement('div');
       const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
       const imgNode = remoteDOM.document.createElement('img');
@@ -165,8 +164,8 @@ describe('node insertBefore', () => {
     });
   });
 
-  describe("providing a ref node", () => {
-    it("should insert the new child before the ref child", () => {
+  describe('providing a ref node', () => {
+    it('should insert the new child before the ref child', () => {
       const parent = remoteDOM.document.createElement('div');
       const aNode = remoteDOM.document.createElement('a');
       const imgNode = remoteDOM.document.createElement('img');
@@ -201,8 +200,8 @@ describe('node insertBefore', () => {
     });
   });
 
-  describe("providing a ref node that is not a child of the parent node", () => {
-    it("should throw error and not send a message", () => {
+  describe('providing a ref node that is not a child of the parent node', () => {
+    it('should throw error and not send a message', () => {
       const parent = remoteDOM.document.createElement('div');
       const imgNode = remoteDOM.document.createElement('img');
       const aNode = remoteDOM.document.createElement('a');
@@ -217,8 +216,8 @@ describe('node insertBefore', () => {
 });
 
 describe('node replaceChild', () => {
-  describe("not providing a ref node", () => {
-    it("should throw error and not send a message", () => {
+  describe('not providing a ref node', () => {
+    it('should throw error and not send a message', () => {
       const parent = remoteDOM.document.createElement('div');
       const aNode = remoteDOM.document.createElement('a');
       parent.appendChild(remoteDOM.document.createElement('img'));
@@ -232,8 +231,8 @@ describe('node replaceChild', () => {
     });
   });
 
-  describe("providing a ref node", () => {
-    it("should replace the old child with the new before the ref child", () => {
+  describe('providing a ref node', () => {
+    it('should replace the old child with the new before the ref child', () => {
       const parent = remoteDOM.document.createElement('div');
       const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
       const imgNode = remoteDOM.document.createElement('img');
@@ -248,7 +247,7 @@ describe('node replaceChild', () => {
       expect(domContainer.children[0].children[0].tagName.toLowerCase()).toBe('img');
     });
 
-    it("should replace the old child with the children of a document fragment (and not the fragment itself)", () => {
+    it('should replace the old child with the children of a document fragment (and not the fragment itself)', () => {
       const parent = remoteDOM.document.createElement('div');
       const aNode = parent.appendChild(remoteDOM.document.createElement('a'));
       const docFragment = remoteDOM.document.createDocumentFragment();
@@ -268,8 +267,8 @@ describe('node replaceChild', () => {
     });
   });
 
-  describe("providing a ref node that is not a child of the parent node", () => {
-    it("should throw error and not send a message", () => {
+  describe('providing a ref node that is not a child of the parent node', () => {
+    it('should throw error and not send a message', () => {
       const parent = remoteDOM.document.createElement('div');
       const imgNode = remoteDOM.document.createElement('img');
       const aNode = remoteDOM.document.createElement('a');
@@ -280,5 +279,83 @@ describe('node replaceChild', () => {
       }).toThrow();
       expect(domContainer.children[0].children.length).toBe(0);
     });
+  });
+});
+
+describe('dispatchEvent', () => {
+  it('should dispatch a regular event with the requested type and init params', () => {
+    const divNode = remoteDOM.document.createElement('div');
+    const evt = new remoteDOM.window.Event('click', {
+      bubbles: true,
+      cancelable: true,
+      scoped: true,
+      composed: true
+    });
+    const listenerSpy = jest.fn();
+    remoteContainer.appendChild(divNode);
+    divNode.addEventListener('click', listenerSpy);
+
+    divNode.dispatchEvent(evt);
+
+    expect(listenerSpy).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'click',
+      bubbles: true,
+      cancelable: true
+    }));
+  });
+
+  it('should dispatch a custom event with the requested type and init params', () => {
+    const divNode = remoteDOM.document.createElement('div');
+    const evt = new remoteDOM.window.CustomEvent('test-event', {
+      detail: {
+        foo: 'bar'
+      }
+    });
+    const listenerSpy = jest.fn();
+    remoteContainer.appendChild(divNode);
+    divNode.addEventListener('test-event', listenerSpy);
+
+    divNode.dispatchEvent(evt);
+
+    expect(listenerSpy).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'test-event',
+      detail: {
+        foo: 'bar'
+      }
+    }));
+  });
+
+  it('should dispatch event on window', () => {
+    const evt = new remoteDOM.window.CustomEvent('test-event', {
+      bubbles: true,
+      cancelable: true,
+      scoped: true,
+      composed: true
+    });
+    const listenerSpy = jest.fn();
+    remoteDOM.window.addEventListener('test-event', listenerSpy);
+    env.jsdomDefaultView.window.dispatchEvent = jest.fn(); // this had to be done with a spy (opposed to the previous tests) since jsdom window does not function like a real window object
+
+    remoteDOM.window.dispatchEvent(evt);
+
+    expect(env.jsdomDefaultView.window.dispatchEvent).toHaveBeenCalled();
+    expect(env.jsdomDefaultView.window.dispatchEvent.mock.calls[0][0].type).toBe('test-event');
+  });
+
+  it('should dispatch event on document', () => {
+    const evt = new remoteDOM.window.CustomEvent('test-event', {
+      bubbles: true,
+      cancelable: true,
+      scoped: true,
+      composed: true
+    });
+    const listenerSpy = jest.fn();
+    remoteDOM.document.addEventListener('test-event', listenerSpy);
+    env.jsdomDefaultView.document.dispatchEvent = jest.fn(); // this had to be done with a spy (opposed to the previous tests) since jsdom window does not function like a real window object
+
+    remoteDOM.document.dispatchEvent(evt);
+
+    expect(env.jsdomDefaultView.document.dispatchEvent).toHaveBeenCalled();
+    expect(env.jsdomDefaultView.document.dispatchEvent.mock.calls[0][0].type).toBe('test-event');
   });
 });
