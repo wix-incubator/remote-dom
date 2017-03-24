@@ -2,7 +2,7 @@ importScripts(['require.js']);
 requirejs.config({
 //By default load any module IDs from js/lib
   paths: {
-    RemoteDOM: '../dist/bundle',
+    RemoteDOM: '../../dist/bundle',
     // react: './react.min',
     // reactDOM: './react-dom.min'
     react: './react.min',
