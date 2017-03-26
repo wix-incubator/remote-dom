@@ -3,7 +3,8 @@
 import {Node, Commands, Constants, MessagesQueue, StyleAttributes, EventDOMNodeAttributes, SupportedEvents} from './common';
 
 let index = 0;
-let containerPromiseResolver;
+let initMsgPromiseResolver;
+const initMsgPromise = new Promise(resolve => {initMsgPromiseResolver = resolve});
 
 const queue = new MessagesQueue();
 const eventsByTypeAndTarget = {};
@@ -319,13 +320,7 @@ function createContainer (name) {
   const res = new RemoteContainer();
   connectedElementsByIndex[res.$index] = res;
   queue.push([Commands.createContainer, res.$index, name]);
-  return new Promise(resolve => {
-    if (containerPromiseResolver) {
-      resolve(res);
-    } else {
-      containerPromiseResolver = resolve.bind(undefined, res);
-    }
-  });
+  return initMsgPromise.then(() => res);
 }
 
 function addEventListener (target, evtName, callback, capture) {
@@ -362,11 +357,7 @@ function handleMessagesFromPipe(messages) {
     const evtIntent = msg[0];
     switch (evtIntent) {
       case (Constants.INIT): {
-        if (typeof containerPromiseResolver === 'function') {
-          containerPromiseResolver();
-        } else {
-          containerPromiseResolver = true;
-        }
+        initMsgPromiseResolver && initMsgPromiseResolver();
         const eventData = msg[1];
         Object.keys(eventData).forEach((index) => {
           updateConnectedElement(index, eventData);
