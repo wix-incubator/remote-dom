@@ -54,7 +54,9 @@ const Constants = {
   WINDOW: 'WINDOW',
   DEFAULT_NAME: 'DEFAULT_NAME',
   QUEUE_INDEX: 'QUEUE_INDEX',
-  NODE_INDEX: 'NODE_INDEX'
+  NODE_INDEX: 'NODE_INDEX',
+  INIT: 'INIT',
+  EVENT: 'EVENT'
 };
 
 let index = 0;

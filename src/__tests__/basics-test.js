@@ -19,17 +19,26 @@ const windowOverrides = {
   addEventListener: jest.fn()
 };
 
-let domContainer, remoteContainer;
+const documentOverrides = {
+  body: {
+    clientWidth: 0
+  }
+};
+
+let domContainer,remoteContainer;
 let counter = 0;
 let env;
 
-beforeEach(() => {
-  env = testUtils.setup(windowOverrides);
+beforeEach((done) => {
+  env = testUtils.setup(windowOverrides, documentOverrides);
   domContainer = env.jsdomDefaultView.document.createElement('div');
   const id = 'container_' + counter++;
   env.jsdomDefaultView.document.body.appendChild(domContainer);
   localDOM.createContainer(env.localQueue, domContainer, id);
-  remoteContainer = remoteDOM.createContainer(id);
+  remoteDOM.createContainer(id).then(container => {
+    remoteContainer = container;
+    done();
+  });
 });
 
 it('native innerHTML', () => {
@@ -94,6 +103,11 @@ describe('initialization', () => {
     const windowOverridesWithoutMethods = Object.assign({}, windowOverrides);
     delete windowOverridesWithoutMethods.addEventListener;
     expect(remoteDOM.window).toMatchObject(windowOverridesWithoutMethods);
+  });
+
+  it('should update remote document properties from actual local document on initialization', function() {
+    const documentOverridesWithoutMethods = Object.assign({}, documentOverrides);
+    expect(remoteDOM.document).toMatchObject(documentOverridesWithoutMethods);
   });
 
   it('should register to relevant updates of actual local window properties', () => {
