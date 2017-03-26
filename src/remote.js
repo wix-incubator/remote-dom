@@ -4,7 +4,7 @@ import {Node, Commands, Constants, MessagesQueue, StyleAttributes, EventDOMNodeA
 
 let index = 0;
 let initMsgPromiseResolver;
-const initMsgPromise = new Promise(resolve => {initMsgPromiseResolver = resolve});
+const initMsgPromise = new Promise(resolve => {initMsgPromiseResolver = resolve;});
 
 const queue = new MessagesQueue();
 const eventsByTypeAndTarget = {};
