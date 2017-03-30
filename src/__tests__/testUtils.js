@@ -1,4 +1,6 @@
 const remoteDOM = require('../remote');
+global.window = remoteDOM.window; // eslint-disable-line no-undef
+global.document = remoteDOM.document; // eslint-disable-line no-undef
 const localDOM = require('../local');
 
 function setup (windowOverrides) {

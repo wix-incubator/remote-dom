@@ -74,9 +74,6 @@ class RemoteNode {
     return document;
   }
 
-  set innerHTML (val) {
-  }
-
   set host (host) {
     if (Boolean(host) === Boolean(this.$host)) {
       return;
@@ -229,7 +226,11 @@ class RemoteElement extends RemoteNode {
     delete this.$attr[k];
   }
 
-  get style () {
+  hasAttribute(k) {
+    return this.$attr.hasOwnProperty(k);
+  }
+
+  get style() {
     return this.$style;
   }
 
@@ -239,6 +240,11 @@ class RemoteElement extends RemoteNode {
 
   set innerHTML (val) {
     queue.push([Commands.innerHTML, this.$index, val]);
+    this.$innerHTML = val;
+  }
+
+  get innerHTML () {
+    return this.$innerHTML;
   }
 
   set innerText (val) {

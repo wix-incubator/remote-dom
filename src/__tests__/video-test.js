@@ -1,8 +1,8 @@
+import testUtils from './testUtils';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import * as remoteDOM from '../remote';
 import * as localDOM from '../local';
-import testUtils from './testUtils';
 
 let domContainer, remoteContainer;
 let counter = 0;

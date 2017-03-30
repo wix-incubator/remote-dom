@@ -46,9 +46,11 @@
     "jsdom": "^9.8.3",
     "react": "^15.4.1",
     "react-dom": "^15.4.1",
+    "vue": "^2.2.4",
     "webpack": "^2.2.1"
   },
   "jest": {
-    "testRegex": "__tests__.*-test.js$"
+    "testRegex": "__tests__.*-test.js$",
+    "testEnvironment": "node"
   }
 }
