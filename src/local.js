@@ -40,10 +40,7 @@ function serializeEventVal (queueIndex, val) {
   } else if (val === doc) {
     return Constants.DOCUMENT;
   } else if (val instanceof win.Node) {
-    if (val[Constants.QUEUE_INDEX] === queueIndex) {
-      return val[Constants.NODE_INDEX];
-    }
-
+    return val[Constants.QUEUE_INDEX] === queueIndex ? val[Constants.NODE_INDEX] : null;
   } else if (val instanceof Array) {
     return val.map((v) => serializeEventVal(queueIndex, v));
   } else if (typeof val === 'number' || typeof val === 'string' || typeof val === 'boolean') {
