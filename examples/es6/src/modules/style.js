@@ -20,6 +20,10 @@ const style = {
     },
     item1: {
       flex: 1
+    },
+    video: {
+      width: '330px',
+      height: '185px'
     }
   }
 }
