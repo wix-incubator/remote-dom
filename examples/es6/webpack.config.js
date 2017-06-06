@@ -5,7 +5,7 @@ module.exports = {
   devtool: 'source-map',
   output: {
     path: './dist',
-    filename: "app-bundle.js",
+    filename: 'app-bundle.js',
     libraryTarget: 'umd',
   },
   module: {
