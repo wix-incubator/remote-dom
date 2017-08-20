@@ -4,6 +4,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import * as remoteDOM from '../remote';
 import * as localDOM from '../local';
+import { Constants } from '../common';
 
 const windowOverrides = {
   screen: {
@@ -30,16 +31,13 @@ let domContainer,remoteContainer;
 let counter = 0;
 let env;
 
-beforeEach((done) => {
+beforeEach(() => {
   env = testUtils.setup(windowOverrides, documentOverrides);
   domContainer = env.jsdomDefaultView.document.createElement('div');
   const id = 'container_' + counter++;
   env.jsdomDefaultView.document.body.appendChild(domContainer);
   localDOM.createContainer(env.localQueue, domContainer, id);
-  remoteDOM.createContainer(id).then(container => {
-    remoteContainer = container;
-    done();
-  });
+  remoteContainer = remoteDOM.createContainer(id);
 });
 
 it('native innerHTML', () => {
@@ -114,6 +112,15 @@ describe('initialization', () => {
   it('should register to relevant updates of actual local window properties', () => {
     expect(env.jsdomDefaultView.window.addEventListener).toHaveBeenCalledWith('orientationchange', expect.any(Function));
     expect(env.jsdomDefaultView.window.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
+  });
+
+  it('onInit registered handlers are invoked upon init', (done) => {
+    const remoteHandler = testUtils.setupRemote();
+    remoteDOM.onInit(() => {
+      done();
+    });
+
+    remoteHandler({data: JSON.stringify({REMOTE_DOM: [[Constants.INIT, {}]]})});
   });
 });
 

@@ -7,20 +7,17 @@ const remoteDOM = require('../remote');
 
 const windowOverrides = {};
 
-let domContainer,remoteContainer, id;
+let domContainer, remoteContainer, id;
 let counter = 0;
 let env;
 
-  beforeEach((done) => {
+  beforeEach(() => {
     env = testUtils.setup(windowOverrides, localDOM, remoteDOM);
     domContainer = env.jsdomDefaultView.document.createElement('div');
     id = 'container_' + counter++;
     env.jsdomDefaultView.document.body.appendChild(domContainer);
     localDOM.createContainer(env.localQueue, domContainer, id);
-    remoteDOM.createContainer(id).then(container => {
-      remoteContainer = container;
-      done();
-    });
+    remoteContainer = remoteDOM.createContainer(id);
   });
 
 it('vue basics', () => {

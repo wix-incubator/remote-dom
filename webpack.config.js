@@ -1,7 +1,7 @@
 module.exports = {
   entry: './src/index.js',
   output: {
-    path: './dist',
+    path: __dirname + '/dist',
     filename: "bundle.js",
     libraryTarget: 'umd',
     library: 'remoteDOM'
