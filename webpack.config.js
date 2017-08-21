@@ -1,3 +1,5 @@
+const webpack = require('webpack');
+
 module.exports = {
   entry: './src/index.js',
   output: {
@@ -15,5 +17,9 @@ module.exports = {
         presets: ['es2015']
       }}
     ]
-  }
+  },
+  plugins: [new webpack.optimize.UglifyJsPlugin({
+    minimize: true,
+    sourceMap: true
+  })]
 };
