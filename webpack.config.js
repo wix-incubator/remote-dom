@@ -1,9 +1,10 @@
+const path = require('path');
 const webpack = require('webpack');
 
 module.exports = {
   entry: './src/index.js',
   output: {
-    path: __dirname + '/dist',
+    path: path.resolve(__dirname, 'dist'),
     filename: "bundle.js",
     libraryTarget: 'umd',
     library: 'remoteDOM'

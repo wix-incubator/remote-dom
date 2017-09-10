@@ -381,3 +381,225 @@ describe('dispatchEvent', () => {
     expect(env.jsdomDefaultView.document.dispatchEvent.mock.calls[0][0].type).toBe('test-event');
   });
 });
+
+describe('messages arriving before a local container was created', () => {
+  const testId = 'test-id';
+
+  const createRemoteContainer = remoteContainerId => {
+    return remoteDOM.createContainer(remoteContainerId);
+  };
+
+  it('creating remote container should not throw error', () => {
+    expect(() => {
+      remoteDOM.createContainer(testId);
+    }).not.toThrowError();
+  });
+
+  it('creating the local container should sync it with the previously created remote', () => {
+    const remoteContainer = remoteDOM.createContainer(testId);
+      localDOM.createContainer(env.localQueue, domContainer, testId);
+      remoteContainer.textContent = 'sfg';
+      expect(domContainer.textContent).toEqual('sfg');
+  });
+
+  it('appendChild should append the child as soon as the local container is created', () => {
+    const remoteContainer = remoteDOM.createContainer(testId);
+      const divChild = remoteDOM.document.createElement('div');
+      remoteContainer.appendChild(divChild);
+      const numOfChildrenBefore = domContainer.children.length;
+
+      localDOM.createContainer(env.localQueue, domContainer, testId);
+      const numOfChildrenAfter = domContainer.children.length;
+
+      expect(numOfChildrenBefore).toBe(0);
+      expect(numOfChildrenAfter).toBe(1);
+      expect(domContainer.children[0].tagName.toLowerCase()).toEqual('div');
+  });
+
+  it('insertBefore should insert the child as soon as the local container is created', () => {
+    const remoteContainer = remoteDOM.createContainer(testId);
+      const divChild = remoteDOM.document.createElement('div');
+      remoteContainer.appendChild(divChild);
+      remoteContainer.insertBefore(remoteDOM.document.createElement('a'), divChild);
+      const numOfChildrenBefore = domContainer.children.length;
+
+      localDOM.createContainer(env.localQueue, domContainer, testId);
+      const numOfChildrenAfter = domContainer.children.length;
+
+      expect(numOfChildrenBefore).toBe(0);
+      expect(numOfChildrenAfter).toBe(2);
+      expect(Array.from(domContainer.children).map(child => child.tagName.toLowerCase())).toEqual(['a', 'div']);
+  });
+
+  it('removeChild should remove the child as soon as the local container is created', () => {
+    const remoteContainer = remoteDOM.createContainer(testId);
+      const divChild = remoteDOM.document.createElement('div');
+      remoteContainer.appendChild(divChild);
+      remoteContainer.removeChild(divChild);
+      const numOfChildrenBefore = domContainer.children.length;
+
+      localDOM.createContainer(env.localQueue, domContainer, testId);
+      const numOfChildrenAfter = domContainer.children.length;
+
+      expect(numOfChildrenBefore).toBe(0);
+      expect(numOfChildrenAfter).toBe(0);
+  });
+
+  it('replaceChild should replace the child as soon as the local container is created', () => {
+    const remoteContainer = remoteDOM.createContainer(testId);
+      const divChild = remoteDOM.document.createElement('div');
+      remoteContainer.appendChild(divChild);
+      remoteContainer.replaceChild(remoteDOM.document.createElement('a'), divChild);
+      const numOfChildrenBefore = domContainer.children.length;
+
+      localDOM.createContainer(env.localQueue, domContainer, testId);
+      const numOfChildrenAfter = domContainer.children.length;
+
+      expect(numOfChildrenBefore).toBe(0);
+      expect(numOfChildrenAfter).toBe(1);
+      expect(domContainer.children[0].tagName.toLowerCase()).toEqual('a');
+  });
+
+  it('setAttribute should set an attribute as soon as the local container is created', () => {
+    const remoteContainer = remoteDOM.createContainer(testId);
+      remoteContainer.setAttribute('test', 'true');
+      const attributeBefore = domContainer.getAttribute('test');
+
+      localDOM.createContainer(env.localQueue, domContainer, testId);
+      const attributeAfter = domContainer.getAttribute('test');
+
+      expect(attributeBefore).toBe(null);
+      expect(attributeAfter).toEqual('true');
+  });
+
+  it('removeAttribute should remove an attribute as soon as the local container is created', () => {
+    const remoteContainer = remoteDOM.createContainer(testId);
+      domContainer.setAttribute('test', 'true');
+      remoteContainer.removeAttribute('test');
+      const attributeBefore = domContainer.getAttribute('test');
+
+      localDOM.createContainer(env.localQueue, domContainer, testId);
+      const attributeAfter = domContainer.getAttribute('test');
+
+      expect(attributeBefore).toEqual('true');
+      expect(attributeAfter).toBe(null);
+  });
+
+  xit('setStyles should set styles as soon as the local container is created', (done) => { // TODO: 18/07/2017 Shimi_Liderman setStyles is never invoked
+    createRemoteContainer(testId, remoteContainer => {
+      remoteContainer.style = 'color: blue; right: 100px';
+      const styleRightBefore = domContainer.style.right;
+      const styleColorBefore = domContainer.style.color;
+
+      localDOM.createContainer(env.localQueue, domContainer, testId);
+      const styleRightAfter = domContainer.style.right;
+      const styleColorAfter = domContainer.style.color;
+
+      expect(styleRightBefore).toEqual('');
+      expect(styleColorBefore).toEqual('');
+      expect(styleRightAfter).toEqual('100px');
+      expect(styleColorAfter).toEqual('blue');
+      done();
+    });
+  });
+
+  it('setStyle should set style as soon as the local container is created', () => {
+    const remoteContainer = remoteDOM.createContainer(testId);
+      remoteContainer.style.left = '50px';
+      const styleLeftBefore = domContainer.style.left;
+
+      localDOM.createContainer(env.localQueue, domContainer, testId);
+      const styleLeftAfter = domContainer.style.left;
+
+      expect(styleLeftBefore).toEqual('');
+      expect(styleLeftAfter).toEqual('50px');
+  });
+
+  it('innerHTML should be set as soon as the local container is created', () => {
+    const remoteContainer = remoteDOM.createContainer(testId);
+      const innerHTML = '<div>bla</div>';
+      remoteContainer.innerHTML = innerHTML;
+      const innerHTMLBefore = domContainer.innerHTML;
+
+      localDOM.createContainer(env.localQueue, domContainer, testId);
+      const innerHTMLAfter = domContainer.innerHTML;
+
+      expect(innerHTMLBefore).toEqual('');
+      expect(innerHTMLAfter).toEqual(innerHTML);
+  });
+
+  it('innerText should be set as soon as the local container is created', () => {
+    const remoteContainer = remoteDOM.createContainer(testId);
+      const innerText = 'inner-bla';
+      remoteContainer.innerText = innerText;
+      const innerTextBefore = domContainer.innerText;
+
+      localDOM.createContainer(env.localQueue, domContainer, testId);
+      const innerTextAfter = domContainer.innerText;
+
+      expect(innerTextBefore).toBe(undefined);
+      expect(innerTextAfter).toEqual(innerText);
+  });
+
+  it('textContent should be set as soon as the local container is created', () => {
+    const remoteContainer = remoteDOM.createContainer(testId);
+        const textContent = 'bla-content';
+        remoteContainer.textContent = textContent;
+        const textContentBefore = domContainer.textContent;
+
+        localDOM.createContainer(env.localQueue, domContainer, testId);
+        const textContentAfter = domContainer.textContent;
+
+        expect(textContentBefore).toEqual('');
+        expect(textContentAfter).toEqual(textContent);
+  });
+
+  it('addEventListener should be add an event listener as soon as the local container is created', () => {
+    const remoteContainer = remoteDOM.createContainer(testId);
+      const clickMock = jest.fn();
+      remoteContainer.addEventListener('click', clickMock);
+
+      localDOM.createContainer(env.localQueue, domContainer, testId);
+      domContainer.click();
+
+      expect(clickMock).toHaveBeenCalled();
+  });
+
+  it('removeEventListener should remove an event listener as soon as the local container is created', () => {
+    const remoteContainer = remoteDOM.createContainer(testId);
+      const clickMock = jest.fn();
+      remoteContainer.addEventListener('click', clickMock);
+      remoteContainer.removeEventListener('click', clickMock);
+
+      localDOM.createContainer(env.localQueue, domContainer, testId);
+      domContainer.click();
+
+      expect(clickMock).not.toHaveBeenCalled();
+  });
+
+  it('dispatchEvent should dispatch the event as soon as the local container is created', () => {
+    const remoteContainer = remoteDOM.createContainer(testId);
+      const clickMock = jest.fn();
+      const evt = new remoteDOM.window.Event('click', {
+        bubbles: true,
+        cancelable: true,
+        scoped: true,
+        composed: true
+      });
+      domContainer.addEventListener('click', clickMock);
+      remoteContainer.dispatchEvent(evt);
+
+      localDOM.createContainer(env.localQueue, domContainer, testId);
+
+      expect(clickMock).toHaveBeenCalled();
+  });
+
+  it('invokeNative should invoke the native method as soon as the local container is created', () => {
+    const remoteContainer = remoteDOM.createContainer(testId);
+      remoteContainer.invokeNative('native');
+
+      localDOM.createContainer(env.localQueue, domContainer, testId);
+
+      expect(env.nativeInvocationMock).toHaveBeenCalled();
+    });
+  });

@@ -15,6 +15,7 @@ const queuesByIndex = {};
 const elementsByQueue = {};
 const eventsByQueueAndName = {};
 const nativeInvocationsByQueue = {};
+const pendingMessagesByQueue = {};
 let win = null;
 let doc = null;
 
@@ -31,6 +32,11 @@ function createContainer (queueIndex, domElement, name) {
   name = name || Constants.DEFAULT_NAME;
   const res = new LocalContainer(queueIndex, domElement, name);
   containersByQueueAndName[queueIndex][name] = res;
+
+  const pendingMessages = pendingMessagesByQueue[queueIndex];
+  pendingMessagesByQueue[queueIndex] = [];
+  applyMessages(queueIndex, pendingMessages);
+
   return res;
 }
 
@@ -73,109 +79,273 @@ function generalEventHandler (queueIndex, evtTarget, evtName, ev) {
   }
 }
 
+function createHandleMsgOrQueueWrapper (handler) {
+  return (queueIndex, msg) => {
+    const wasMessageHandled = handler(queueIndex, msg);
+
+    if (!wasMessageHandled) {
+      pendingMessagesByQueue[queueIndex].push(msg);
+    }
+  };
+}
+
+function wrapAll (obj, wrapperFn) {
+  return Object.keys(obj).reduce((res, fnName) => {
+    res[fnName] = wrapperFn(obj[fnName]);
+    return res;
+  }, {});
+}
+
+const messageHandlers = wrapAll({
+  [Commands.createContainer]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    const containers = containersByQueueAndName[queueIndex];
+    const containerName = msg[2];
+
+    if (containers[containerName]) {
+      elements[msg[1]] = containers[containerName].domElement;
+      return true;
+    }
+
+    return false;
+  },
+  [Commands.createElement]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    elements[msg[1]] = doc.createElement(msg[2].toLowerCase());
+    elements[msg[1]][Constants.QUEUE_INDEX] = queueIndex;
+    elements[msg[1]][Constants.NODE_INDEX] = msg[1];
+    return true;
+  },
+  [Commands.createTextNode]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    elements[msg[1]] = doc.createTextNode(msg[2]);
+    elements[msg[1]][Constants.QUEUE_INDEX] = queueIndex;
+    elements[msg[1]][Constants.NODE_INDEX] = msg[1];
+    return true;
+  },
+  [Commands.createComment]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    elements[msg[1]] = doc.createComment(msg[2]);
+    elements[msg[1]][Constants.QUEUE_INDEX] = queueIndex;
+    elements[msg[1]][Constants.NODE_INDEX] = msg[1];
+    return true;
+  },
+  [Commands.createDocumentFragment]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    elements[msg[1]] = doc.createDocumentFragment(msg[2]);
+    return true;
+  },
+  [Commands.appendChild]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    const parentId = msg[1];
+    const childId = msg[2];
+
+    if (elements[parentId]) {
+      elements[parentId].appendChild(elements[childId]);
+      return true;
+    }
+
+    return false;
+  },
+  [Commands.insertBefore]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    const parentNodeId = msg[1];
+    const newChildNodeId = msg[2];
+    const referenceNodeId = msg[3];
+
+    if (elements[parentNodeId]) {
+      elements[parentNodeId].insertBefore(elements[newChildNodeId], referenceNodeId ? elements[referenceNodeId] : null);
+      return true;
+    }
+
+    return false;
+  },
+  [Commands.removeChild]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    const parentId = msg[1];
+    const childId = msg[2];
+
+    if (elements[parentId] && elements[childId]) {
+      elements[parentId].removeChild(elements[childId]);
+      return true;
+    }
+
+    return false;
+  },
+  [Commands.replaceChild]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    const parentId = msg[1];
+    const newChildId = msg[2];
+    const oldChildId = msg[3];
+
+    if (elements[parentId] && elements[newChildId] && elements[oldChildId]) {
+      elements[parentId].replaceChild(elements[newChildId], elements[oldChildId]);
+      return true;
+    }
+
+    return false;
+  },
+  [Commands.setAttribute]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+
+    if (elements[msg[1]]) {
+      elements[msg[1]].setAttribute(msg[2], msg[3]);
+      return true;
+    }
+
+    return false;
+  },
+  [Commands.removeAttribute]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+
+    if (elements[msg[1]]) {
+      elements[msg[1]].removeAttribute(msg[2]);
+      return true;
+    }
+
+    return false;
+  },
+  [Commands.setStyles]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+
+    if (elements[msg[1]]) {
+      elements[msg[1]].style = msg[2];
+      return true;
+    }
+
+    return false;
+  },
+  [Commands.setStyle]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+
+    if (elements[msg[1]]) {
+      elements[msg[1]].style[msg[2]] = msg[3];
+      return true;
+    }
+
+    return false;
+  },
+  [Commands.innerHTML]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+
+    if (elements[msg[1]]) {
+      elements[msg[1]].innerHTML = msg[2];
+      return true;
+    }
+
+    return false;
+  },
+  [Commands.innerText]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+
+    if (elements[msg[1]]) {
+      elements[msg[1]].innerText = msg[2];
+      return true;
+    }
+
+    return false;
+  },
+  [Commands.textContent]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+
+    if (elements[msg[1]]) {
+      elements[msg[1]].textContent = msg[2];
+      return true;
+    }
+    return false;
+  },
+  [Commands.setValue]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    if (elements[msg[1]]) {
+    elements[msg[1]].value = msg[2];
+      return true;
+    }
+    return false;
+  },
+  [Commands.pause]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    if (elements[msg[1]]) {
+    elements[msg[1]].pause();
+      return true;
+    }
+    return false;
+  },
+  [Commands.play]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    if (elements[msg[1]]) {
+    elements[msg[1]].play();
+      return true;
+    }
+    return false;
+  },
+  [Commands.src]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    if (elements[msg[1]]) {
+    elements[msg[1]].src = msg[2];
+      return true;
+    }
+    return false;
+  },
+  [Commands.addEventListener]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    const events = eventsByQueueAndName[queueIndex];
+
+    if (elements[msg[1]]) {
+      const func = generalEventHandler.bind(null, queueIndex, msg[1], msg[2]);
+      events[msg[2]] = events[msg[2]] || {};
+      events[msg[2]][msg[3]] = func;
+      elements[msg[1]].addEventListener(msg[2], func, msg[4]);
+      return true;
+    }
+
+    return false;
+  },
+  [Commands.removeEventListener]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    const events = eventsByQueueAndName[queueIndex];
+
+    if (elements[msg[1]]) {
+      events[msg[2]] = events[msg[2]] || {};
+      const origFunc = events[msg[2]][msg[3]];
+      elements[msg[1]].removeEventListener(msg[2], origFunc);
+      return true;
+    }
+
+    return false;
+  },
+  [Commands.dispatchEvent]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+
+    if (elements[msg[1]]) {
+      const evt = msg[4] ? new win.CustomEvent(msg[2], msg[3]) : new win.Event(msg[2], msg[3]);
+      elements[msg[1]].dispatchEvent(evt);
+      return true;
+    }
+
+    return false;
+  },
+  [Commands.initiated]: (queueIndex) => {
+    handleRemoteInit(queueIndex);
+  },
+  [Commands.invokeNative]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    const nativeInvocations = nativeInvocationsByQueue[queueIndex];
+
+    if (elements[msg[1]]) {
+      if (nativeInvocations[msg[2]]) {
+        nativeInvocations[msg[2]](elements[msg[1]], msg[3]);
+      }
+      return true;
+    }
+
+    return false;
+  }
+}, createHandleMsgOrQueueWrapper);
+
 function applyMessages (queueIndex, messages) {
-  const elements = elementsByQueue[queueIndex];
-  const containers = containersByQueueAndName[queueIndex];
-  const events = eventsByQueueAndName[queueIndex];
-  const nativeInvocations = nativeInvocationsByQueue[queueIndex];
-  // console.log('applyMessages', queueIndex, messages);
   messages.forEach(msg => {
     const msgType = msg[0];
-    // console.log('applyMessage:', msg);
-    switch (msgType) {
-      case (Commands.createContainer):
-        elements[msg[1]] = containers[msg[2]].domElement;
-        break;
-      case (Commands.createElement):
-        elements[msg[1]] = doc.createElement(msg[2].toLowerCase());
-        elements[msg[1]][Constants.QUEUE_INDEX] = queueIndex;
-        elements[msg[1]][Constants.NODE_INDEX] = msg[1];
-        break;
-      case (Commands.createTextNode):
-        elements[msg[1]] = doc.createTextNode(msg[2]);
-        elements[msg[1]][Constants.QUEUE_INDEX] = queueIndex;
-        elements[msg[1]][Constants.NODE_INDEX] = msg[1];
-        break;
-      case (Commands.createComment):
-        elements[msg[1]] = doc.createComment(msg[2]);
-        elements[msg[1]][Constants.QUEUE_INDEX] = queueIndex;
-        elements[msg[1]][Constants.NODE_INDEX] = msg[1];
-        break;
-      case (Commands.createDocumentFragment):
-        elements[msg[1]] = doc.createDocumentFragment(msg[2]);
-        break;
-      case (Commands.dispatchEvent): {
-        const evt = msg[4] ? new win.CustomEvent(msg[2], msg[3]) : new win.Event(msg[2], msg[3]);
-        elements[msg[1]].dispatchEvent(evt);
-        break;
-      }
-      case (Commands.appendChild):
-        elements[msg[1]].appendChild(elements[msg[2]]);
-        break;
-      case (Commands.insertBefore):
-        elements[msg[1]].insertBefore(elements[msg[2]], msg[3] ? elements[msg[3]] : null);
-        break;
-      case (Commands.removeChild):
-        elements[msg[1]].removeChild(elements[msg[2]]);
-        break;
-      case (Commands.replaceChild):
-        elements[msg[1]].replaceChild(elements[msg[2]], elements[msg[3]]);
-        break;
-      case (Commands.setAttribute):
-        elements[msg[1]].setAttribute(msg[2], msg[3]);
-        break;
-      case (Commands.removeAttribute):
-        elements[msg[1]].removeAttribute(msg[2]);
-        break;
-      case (Commands.setStyles):
-        elements[msg[1]].style = msg[2];
-        break;
-      case (Commands.setStyle):
-        elements[msg[1]].style[msg[2]] = msg[3];
-        break;
-      case (Commands.innerHTML):
-        elements[msg[1]].innerHTML = msg[2];
-        break;
-      case (Commands.innerText):
-        elements[msg[1]].innerText = msg[2];
-        break;
-      case (Commands.textContent):
-        elements[msg[1]].textContent = msg[2];
-        break;
-      case (Commands.setValue):
-        elements[msg[1]].value = msg[2];
-        break;
-      case (Commands.pause):
-        elements[msg[1]].pause();
-        break;
-      case (Commands.play):
-        elements[msg[1]].play();
-        break;
-      case (Commands.src):
-        elements[msg[1]].src = msg[2];
-        break;
-      case (Commands.addEventListener): {
-        const func = generalEventHandler.bind(null, queueIndex, msg[1], msg[2]);
-        events[msg[2]] = events[msg[2]] || {};
-        events[msg[2]][msg[3]] = func;
-        elements[msg[1]].addEventListener(msg[2], func, msg[4]);
-        break;
-      }
-      case (Commands.removeEventListener): {
-        events[msg[2]] = events[msg[2]] || {};
-        const origFunc = events[msg[2]][msg[3]];
-        elements[msg[1]].removeEventListener(msg[2], origFunc);
-        break;
-      }
-      case (Commands.initiated):
-        handleRemoteInit(queueIndex);
-        break;
-      case (Commands.invokeNative):
-        if (nativeInvocations[msg[2]]) {
-          nativeInvocations[msg[2]](elements[msg[1]], msg[3]);
-        }
-        break;
-    }
+    messageHandlers[msgType](queueIndex, msg);
   });
 }
 
@@ -224,6 +394,7 @@ function createMessageQueue (channel, timerFunction, nativeInvocations) {
   containersByQueueAndName[queueIndex] = {};
   elementsByQueue[queueIndex] = {};
   nativeInvocationsByQueue[queueIndex] = nativeInvocations || {};
+  pendingMessagesByQueue[queueIndex] = [];
   elementsByQueue[queueIndex][Constants.DOCUMENT] = doc;
   elementsByQueue[queueIndex][Constants.WINDOW] = win;
   eventsByQueueAndName[queueIndex] = {};
