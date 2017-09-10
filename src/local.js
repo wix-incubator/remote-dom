@@ -79,18 +79,25 @@ function generalEventHandler (queueIndex, evtTarget, evtName, ev) {
   }
 }
 
-function handleMsgOrQueue (handler) {
+function createHandleMsgOrQueueWrapper (handler) {
   return (queueIndex, msg) => {
-    const result = handler(queueIndex, msg);
+    const wasMessageHandled = handler(queueIndex, msg);
 
-    if (!result) {
+    if (!wasMessageHandled) {
       pendingMessagesByQueue[queueIndex].push(msg);
     }
   };
 }
 
-const messageHandlers = {
-  [Commands.createContainer]: handleMsgOrQueue((queueIndex, msg) => {
+function wrapAll (obj, wrapperFn) {
+  return Object.keys(obj).reduce((res, fnName) => {
+    res[fnName] = wrapperFn(obj[fnName]);
+    return res;
+  }, {});
+}
+
+const messageHandlers = wrapAll({
+  [Commands.createContainer]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
     const containers = containersByQueueAndName[queueIndex];
     const containerName = msg[2];
@@ -101,30 +108,34 @@ const messageHandlers = {
     }
 
     return false;
-  }),
+  },
   [Commands.createElement]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
     elements[msg[1]] = doc.createElement(msg[2].toLowerCase());
     elements[msg[1]][Constants.QUEUE_INDEX] = queueIndex;
     elements[msg[1]][Constants.NODE_INDEX] = msg[1];
+    return true;
   },
   [Commands.createTextNode]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
     elements[msg[1]] = doc.createTextNode(msg[2]);
     elements[msg[1]][Constants.QUEUE_INDEX] = queueIndex;
     elements[msg[1]][Constants.NODE_INDEX] = msg[1];
+    return true;
   },
   [Commands.createComment]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
     elements[msg[1]] = doc.createComment(msg[2]);
     elements[msg[1]][Constants.QUEUE_INDEX] = queueIndex;
     elements[msg[1]][Constants.NODE_INDEX] = msg[1];
+    return true;
   },
   [Commands.createDocumentFragment]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
     elements[msg[1]] = doc.createDocumentFragment(msg[2]);
+    return true;
   },
-  [Commands.appendChild]: handleMsgOrQueue((queueIndex, msg) => {
+  [Commands.appendChild]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
     const parentId = msg[1];
     const childId = msg[2];
@@ -135,8 +146,8 @@ const messageHandlers = {
     }
 
     return false;
-  }),
-  [Commands.insertBefore]: handleMsgOrQueue((queueIndex, msg) => {
+  },
+  [Commands.insertBefore]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
     const parentNodeId = msg[1];
     const newChildNodeId = msg[2];
@@ -148,8 +159,8 @@ const messageHandlers = {
     }
 
     return false;
-  }),
-  [Commands.removeChild]: handleMsgOrQueue((queueIndex, msg) => {
+  },
+  [Commands.removeChild]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
     const parentId = msg[1];
     const childId = msg[2];
@@ -160,8 +171,8 @@ const messageHandlers = {
     }
 
     return false;
-  }),
-  [Commands.replaceChild]: handleMsgOrQueue((queueIndex, msg) => {
+  },
+  [Commands.replaceChild]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
     const parentId = msg[1];
     const newChildId = msg[2];
@@ -173,8 +184,8 @@ const messageHandlers = {
     }
 
     return false;
-  }),
-  [Commands.setAttribute]: handleMsgOrQueue((queueIndex, msg) => {
+  },
+  [Commands.setAttribute]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
 
     if (elements[msg[1]]) {
@@ -183,8 +194,8 @@ const messageHandlers = {
     }
 
     return false;
-  }),
-  [Commands.removeAttribute]: handleMsgOrQueue((queueIndex, msg) => {
+  },
+  [Commands.removeAttribute]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
 
     if (elements[msg[1]]) {
@@ -193,8 +204,8 @@ const messageHandlers = {
     }
 
     return false;
-  }),
-  [Commands.setStyles]: handleMsgOrQueue((queueIndex, msg) => {
+  },
+  [Commands.setStyles]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
 
     if (elements[msg[1]]) {
@@ -203,8 +214,8 @@ const messageHandlers = {
     }
 
     return false;
-  }),
-  [Commands.setStyle]: handleMsgOrQueue((queueIndex, msg) => {
+  },
+  [Commands.setStyle]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
 
     if (elements[msg[1]]) {
@@ -213,8 +224,8 @@ const messageHandlers = {
     }
 
     return false;
-  }),
-  [Commands.innerHTML]: handleMsgOrQueue((queueIndex, msg) => {
+  },
+  [Commands.innerHTML]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
 
     if (elements[msg[1]]) {
@@ -223,8 +234,8 @@ const messageHandlers = {
     }
 
     return false;
-  }),
-  [Commands.innerText]: handleMsgOrQueue((queueIndex, msg) => {
+  },
+  [Commands.innerText]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
 
     if (elements[msg[1]]) {
@@ -233,8 +244,8 @@ const messageHandlers = {
     }
 
     return false;
-  }),
-  [Commands.textContent]: handleMsgOrQueue((queueIndex, msg) => {
+  },
+  [Commands.textContent]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
 
     if (elements[msg[1]]) {
@@ -242,24 +253,40 @@ const messageHandlers = {
       return true;
     }
     return false;
-  }),
+  },
   [Commands.setValue]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
+    if (elements[msg[1]]) {
     elements[msg[1]].value = msg[2];
+      return true;
+    }
+    return false;
   },
   [Commands.pause]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
+    if (elements[msg[1]]) {
     elements[msg[1]].pause();
+      return true;
+    }
+    return false;
   },
   [Commands.play]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
+    if (elements[msg[1]]) {
     elements[msg[1]].play();
+      return true;
+    }
+    return false;
   },
   [Commands.src]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
+    if (elements[msg[1]]) {
     elements[msg[1]].src = msg[2];
+      return true;
+    }
+    return false;
   },
-  [Commands.addEventListener]: handleMsgOrQueue((queueIndex, msg) => {
+  [Commands.addEventListener]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
     const events = eventsByQueueAndName[queueIndex];
 
@@ -272,8 +299,8 @@ const messageHandlers = {
     }
 
     return false;
-  }),
-  [Commands.removeEventListener]: handleMsgOrQueue((queueIndex, msg) => {
+  },
+  [Commands.removeEventListener]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
     const events = eventsByQueueAndName[queueIndex];
 
@@ -285,8 +312,8 @@ const messageHandlers = {
     }
 
     return false;
-  }),
-  [Commands.dispatchEvent]: handleMsgOrQueue((queueIndex, msg) => {
+  },
+  [Commands.dispatchEvent]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
 
     if (elements[msg[1]]) {
@@ -296,11 +323,11 @@ const messageHandlers = {
     }
 
     return false;
-  }),
+  },
   [Commands.initiated]: (queueIndex) => {
     handleRemoteInit(queueIndex);
   },
-  [Commands.invokeNative]: handleMsgOrQueue((queueIndex, msg) => {
+  [Commands.invokeNative]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
     const nativeInvocations = nativeInvocationsByQueue[queueIndex];
 
@@ -312,8 +339,8 @@ const messageHandlers = {
     }
 
     return false;
-  })
-};
+  }
+}, createHandleMsgOrQueueWrapper);
 
 function applyMessages (queueIndex, messages) {
   messages.forEach(msg => {
