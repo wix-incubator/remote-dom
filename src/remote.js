@@ -4,7 +4,7 @@ import {Node, Commands, Constants, MessagesQueue, StyleAttributes, EventDOMNodeA
 
 let index = 0;
 let initMsgPromiseResolver;
-const initMsgPromise = new Promise(resolve => {initMsgPromiseResolver = resolve;});
+let initMsgPromise;
 
 const queue = new MessagesQueue();
 const eventsByTypeAndTarget = {};
@@ -326,7 +326,7 @@ function createContainer (name) {
   const res = new RemoteContainer();
   connectedElementsByIndex[res.$index] = res;
   queue.push([Commands.createContainer, res.$index, name]);
-  return initMsgPromise.then(() => res);
+  return res;
 }
 
 function addEventListener (target, evtName, callback, capture) {
@@ -391,13 +391,14 @@ function handleMessagesFromPipe(messages) {
   });
 }
 
-function setChannel (channel, timerFunction) {
+function setChannel(channel, timerFunction) {
+  initMsgPromise = new Promise(resolve => {initMsgPromiseResolver = resolve;});
   queue.setPipe(channel, handleMessagesFromPipe, timerFunction);
-  onInit();
+  queue.push([Commands.initiated]);
 }
 
-function onInit () {
-  queue.push([Commands.initiated]);
+function onInit(cb) {
+  initMsgPromise.then(() => cb());
 }
 
 const document = {
@@ -450,5 +451,6 @@ export {
   document,
   window,
   createContainer,
-  setChannel
+  setChannel,
+  onInit
 };

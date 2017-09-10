@@ -3,6 +3,10 @@ global.window = remoteDOM.window; // eslint-disable-line no-undef
 global.document = remoteDOM.document; // eslint-disable-line no-undef
 const localDOM = require('../local');
 
+function syncTimeout (cb) {
+  cb();
+}
+
 function setup (windowOverrides) {
   const jsdom = require('jsdom');
   const jsdomDefaultView = jsdom.jsdom({
@@ -17,9 +21,6 @@ function setup (windowOverrides) {
 
   let localHandler = null;
   let remoteHandler = null;
-  function syncTimeout (cb) {
-    cb();
-  }
 
   const nativeInvocationMock = jest.fn();
 
@@ -52,6 +53,20 @@ function setup (windowOverrides) {
   };
 }
 
+function setupRemote() {
+  let remoteHandler;
+
+  remoteDOM.setChannel({
+    postMessage: function () {},
+    addEventListener: function (msgType, handler) {
+      remoteHandler = handler;
+    }
+  }, syncTimeout);
+
+  return remoteHandler;
+}
+
 export default {
-  setup
+  setup,
+  setupRemote
 };

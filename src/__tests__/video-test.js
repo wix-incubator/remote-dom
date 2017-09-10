@@ -9,16 +9,13 @@ let counter = 0;
 let env;
 
 describe('video tests', () => {
-  beforeEach((done) => {
+  beforeEach(() => {
     env = testUtils.setup();
     domContainer = env.jsdomDefaultView.document.createElement('div');
     const id = 'container_' + counter++;
     env.jsdomDefaultView.document.body.appendChild(domContainer);
     localDOM.createContainer(env.localQueue, domContainer, id);
-    remoteDOM.createContainer(id).then(container => {
-      remoteContainer = container;
-      done();
-    });
+    remoteContainer = remoteDOM.createContainer(id);
   });
 
   it('should support get src', done => {
