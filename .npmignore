@@ -1,0 +1,11 @@
+build
+dist
+.DS_Store
+.idea
+coverage
+src
+examples
+.babelrc
+.travis.yml
+.eslintrc.json
+webpack.config.js
