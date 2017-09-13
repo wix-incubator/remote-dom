@@ -173,7 +173,13 @@ class RemoteNode {
   }
 
   set textContent (val) {
-    queue.push([Commands.textContent, this.$index, val]);
+    if (this.childNodes.length !== 1 || this.childNodes[0].nodeType !== Node.TEXT_NODE) {
+      const childTextNode = new RemoteTextualNode(val);
+      childTextNode.parentNode = this;
+      childTextNode.$host = this.$host;
+      this.childNodes = [childTextNode];
+    }
+    queue.push([Commands.textContent, this.$index, val, this.childNodes[0].$index]);
   }
 
   invokeNative (name, args) {
@@ -440,7 +446,8 @@ const window = {
   location: {href: 'https://localhost', protocol: 'https:'},
   navigator: {
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.98 Safari/537.36'
-  }
+  },
+  history: {}
 };
 window.top = window;
 

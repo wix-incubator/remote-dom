@@ -8,6 +8,9 @@
         "es6": true,
         "jest": true
     },
+    "globals": {
+        "setTimeout": false
+    },
     "rules": {
         "no-var": "error",
         "semi": ["error", "always"]

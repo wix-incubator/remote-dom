@@ -250,6 +250,9 @@ const messageHandlers = wrapAll({
 
     if (elements[msg[1]]) {
       elements[msg[1]].textContent = msg[2];
+      if (msg[3]) {
+        elements[msg[3]] = elements[msg[1]].firstChild;
+      }
       return true;
     }
     return false;
