@@ -1,11 +1,10 @@
-import { window, document, setChannel, createContainer} from '../../../../src/remote.js'
-import React from 'react'
-import ReactDOM from 'react-dom'
-import App from './app'
 
-self.window = window
-self.document = document
-setChannel(self)
+import '../worker-setup';
+import { createContainer } from '../../../../src/remote.js';
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './app';
+
 
 class AppContainer {
     constructor(items = [], onItemClick = (item)=> {}, onImageClick = (item)=> console.log(item), onButtonClick = (item)=> console.log(item)) {
@@ -23,7 +22,6 @@ const items = [
 
 const props = new AppContainer(items)
 let renderElement;
-createContainer().then(container => {
-  renderElement = props => ReactDOM.render(React.createElement(App, props), container)
-  renderElement(props)
-})
+let container = createContainer();
+renderElement = props => ReactDOM.render(React.createElement(App, props), container)
+renderElement(props)
