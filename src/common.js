@@ -45,7 +45,9 @@ const Commands = {
   initiated: 'initiated',
   pause: 'pause',
   play: 'play',
-  src: 'src'
+  src: 'src',
+  focus: 'focus',
+  setSelectionRange: 'setSelectionRange'
 };
 
 const Constants = {

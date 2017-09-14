@@ -236,6 +236,14 @@ class RemoteElement extends RemoteNode {
     return this.$attr.hasOwnProperty(k);
   }
 
+  focus () {
+    queue.push([Commands.focus, this.$index]);
+  }
+
+  setSelectionRange (selectionStart, selectionEnd, selectionDirection) {
+    queue.push([Commands.setSelectionRange, this.$index, selectionStart, selectionEnd, selectionDirection]);
+  }
+
   get style() {
     return this.$style;
   }
