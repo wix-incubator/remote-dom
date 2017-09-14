@@ -286,6 +286,22 @@ const messageHandlers = wrapAll({
     }
     return false;
   },
+  [Commands.focus]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    if (elements[msg[1]]) {
+      elements[msg[1]].focus();
+      return true;
+    }
+    return false;
+  },
+  [Commands.setSelectionRange]: (queueIndex, msg) => {
+    const elements = elementsByQueue[queueIndex];
+    if (elements[msg[1]]) {
+      elements[msg[1]].setSelectionRange(msg[2], msg[3], msg[4]);
+      return true;
+    }
+    return false;
+  },
   [Commands.addEventListener]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
     const events = eventsByQueueAndName[queueIndex];
