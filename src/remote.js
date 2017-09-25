@@ -10,6 +10,8 @@ const queue = new MessagesQueue();
 const eventsByTypeAndTarget = {};
 const connectedElementsByIndex = {};
 
+const INLINE_EVENT = 'INLINE_EVENT';
+
 class RemoteStyle {
   constructor ($index) {
     this.$index = $index;
@@ -29,7 +31,7 @@ StyleAttributes.forEach((k) => {
   });
 });
 
-class RemoteNode {
+class RemoteNodeInternal {
   constructor (nodeType, val) {
     index++;
     this.nodeType = nodeType;
@@ -193,6 +195,22 @@ class RemoteNode {
     queue.push([Commands.invokeNative, this.$index, name, args]);
   }
 }
+
+class RemoteNode extends RemoteNodeInternal {}
+
+SupportedEvents.forEach(evtType => {
+  Object.defineProperty(RemoteNode.prototype, evtType, {
+    get: function() {
+      this.$eventHandlers = this.$eventHandlers || {};
+      return this.$eventHandlers[evtType];
+    },
+    set: function(evtHandler) {
+      this.$eventHandlers = this.$eventHandlers || {};
+      this.$eventHandlers[evtType] = evtHandler;
+      setEventListener(this.$index, evtType.slice(2), evtHandler);
+    }
+  });
+});
 
 class RemoteTextualNode extends RemoteNode {
   constructor (text) {
@@ -373,6 +391,20 @@ function removeEventListener (target, evtName, callback) {
   });
   delete evts[idx];
   queue.push([Commands.removeEventListener, target, evtName, index]);
+}
+
+function setEventListener(target, evtName, evtHandler) {
+  eventsByTypeAndTarget[evtName] = eventsByTypeAndTarget[evtName] || {};
+  eventsByTypeAndTarget[evtName][target] = eventsByTypeAndTarget[evtName][target] || {};
+  if (evtHandler && !eventsByTypeAndTarget[evtName][target][INLINE_EVENT]) {
+    queue.push([Commands.addEventListener, target, evtName, INLINE_EVENT, false]);
+  } else if (!evtHandler && eventsByTypeAndTarget[evtName][target][INLINE_EVENT]) {
+    queue.push([Commands.removeEventListener, target, evtName, INLINE_EVENT]);
+  }
+  if (typeof evtHandler === 'string') {
+    evtHandler = Function('event', evtHandler);
+  }
+  eventsByTypeAndTarget[evtName][target][INLINE_EVENT] = evtHandler;
 }
 
 function dispatchEvent (target, event) {
