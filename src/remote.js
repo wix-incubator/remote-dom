@@ -40,6 +40,10 @@ class RemoteNode {
     this.$value = val;
   }
 
+  toString() {
+    return `RemoteNode({nodeType:${this.nodeType},index:${this.$index}})`;
+  }
+
   get children () {
     return this.childNodes;
   }
@@ -104,6 +108,9 @@ class RemoteNode {
 
   insertBefore (child, refChild) {
     const idx = refChild ? this.childNodes.indexOf(refChild) : this.childNodes.length;
+    if (!child) {
+      throw new Error('no child');
+    }
     if (idx === -1) {
       throw new Error("Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.");
     }
@@ -190,10 +197,16 @@ class RemoteNode {
 class RemoteTextualNode extends RemoteNode {
   constructor (text) {
     super(Node.TEXT_NODE, text);
+    this.$value = text;
   }
 
   set nodeValue (val) {
+    this.$value = val;
     queue.push([Commands.textContent, this.$index, val]);
+  }
+  
+  get nodeValue() {
+    return this.$value;
   }
 }
 
@@ -455,7 +468,9 @@ const window = {
   navigator: {
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.98 Safari/537.36'
   },
-  history: {}
+  history: {},
+  requestAnimationFrame: setTimeout,
+  cancelAnimationFrame: clearTimeout
 };
 window.top = window;
 

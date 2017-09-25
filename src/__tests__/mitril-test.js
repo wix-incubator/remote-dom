@@ -1,7 +1,5 @@
 import testUtils from './testUtils';
 
-const m = require('mithril');
-
 const localDOM = require('../local');
 const remoteDOM = require('../remote');
 
@@ -11,8 +9,13 @@ let domContainer, remoteContainer, id;
 let counter = 0;
 let env;
 
-beforeEach(() => {
+const m = require('mithril');
+
+beforeAll(() => {
   env = testUtils.setup(windowOverrides, localDOM, remoteDOM);
+});
+
+beforeEach(() => {
   domContainer = env.jsdomDefaultView.document.createElement('div');
   id = 'container_' + counter++;
   env.jsdomDefaultView.document.body.appendChild(domContainer);
