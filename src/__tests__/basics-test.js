@@ -603,3 +603,9 @@ describe('messages arriving before a local container was created', () => {
       expect(env.nativeInvocationMock).toHaveBeenCalled();
     });
   });
+
+it('input element should have value property directly', function () {
+  const input = remoteDOM.document.createElement('input');
+
+  expect(input.constructor.prototype.hasOwnProperty('value')).toBe(true);
+});
