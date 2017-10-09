@@ -84,9 +84,9 @@ it('event click', () => {
 it('node removeAttribute', () => {
   const statelessComp = (props) => (<span style={{width: props.width}}>hello {props.name}</span>);
   ReactDOM.render(React.createElement(statelessComp, {width: '200px'}), remoteContainer);
-  expect(domContainer.firstChild.attributes[1].value).toBe('width: 200px;');
+  expect(Array.from(domContainer.firstChild.attributes).find(attr => attr.name === 'style').value).toBe('width: 200px;');
   remoteContainer.firstChild.removeAttribute('style');
-  expect(domContainer.firstChild.attributes[1]).toBeUndefined();
+  expect(Array.from(domContainer.firstChild.attributes).find(attr => attr.name === 'style')).toBeUndefined();
 });
 
 it('node replaceChild', () => {
