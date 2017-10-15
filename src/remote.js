@@ -222,7 +222,7 @@ class RemoteTextualNode extends RemoteNode {
     this.$value = val;
     queue.push([Commands.textContent, this.$index, val]);
   }
-  
+
   get nodeValue() {
     return this.$value;
   }
@@ -333,11 +333,33 @@ class RemoteVideo extends RemoteElement {
   }
 }
 
-function createElement (nodeName) {
-  if (nodeName === 'video') {
-    return createVideoNode();
+class RemoteInput extends RemoteElement {
+  constructor () {
+    super('input');
   }
-  const res = new RemoteElement(nodeName);
+
+  set value (val) {
+    this.$value = val;
+    queue.push([Commands.setValue, this.$index, val]);
+  }
+
+  get value () {
+    return this.$value;
+  }
+}
+
+function createElement (nodeName) {
+  let res;
+  switch(nodeName) {
+    case 'video':
+      res = new RemoteVideo();
+      break;
+    case 'input':
+      res = new RemoteInput();
+      break;
+    default:
+      res = new RemoteElement(nodeName);
+  }
   queue.push([Commands.createElement, res.$index, res.tagName]);
   return res;
 }
@@ -351,12 +373,6 @@ function createTextNode (text) {
 function createComment (text) {
   const res = new RemoteComment(text);
   queue.push([Commands.createComment, res.$index, text]);
-  return res;
-}
-
-function createVideoNode () {
-  const res = new RemoteVideo();
-  queue.push([Commands.createElement, res.$index, res.tagName]);
   return res;
 }
 
