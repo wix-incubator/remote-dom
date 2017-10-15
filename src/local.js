@@ -43,6 +43,8 @@ function createContainer (queueIndex, domElement, name) {
 function serializeEventVal (queueIndex, val) {
   if (val === win) {
     return Constants.WINDOW;
+  } else if (val && val.window === val) {
+    return null;
   } else if (val === doc) {
     return Constants.DOCUMENT;
   } else if (val instanceof win.Node) {

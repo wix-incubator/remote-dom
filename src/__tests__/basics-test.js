@@ -565,6 +565,32 @@ describe('messages arriving before a local container was created', () => {
       expect(clickMock).toHaveBeenCalled();
   });
 
+  it('addEventListener evt fields that contain a Window type objects should be replaced with null even if they represent another frame (message event)', () => {
+    const frame = env.jsdomDefaultView.document.createElement('iframe');
+    const listenerSpy = jest.fn();
+    const div = remoteDOM.document.createElement('div');
+    remoteContainer.appendChild(div);
+    domContainer.parentNode.appendChild(frame);
+    const evt = new env.jsdomDefaultView.window.CustomEvent('test-event', {
+      detail: 'bla'
+    });
+    const evtWithWindow = new env.jsdomDefaultView.window.CustomEvent('test-event-with-window', {
+      detail: frame.contentWindow
+    });
+    div.addEventListener('test-event', listenerSpy);
+    div.addEventListener('test-event-with-window', listenerSpy);
+
+    const localDiv = domContainer.children[0];
+    localDiv.dispatchEvent(evt);
+    localDiv.dispatchEvent(evtWithWindow);
+
+    expect(listenerSpy).toHaveBeenCalled();
+    expect(listenerSpy.mock.calls[0][0].type).toBe('test-event');
+    expect(listenerSpy.mock.calls[0][0].detail).toBe('bla');
+    expect(listenerSpy.mock.calls[1][0].type).toBe('test-event-with-window');
+    expect(listenerSpy.mock.calls[1][0].detail).toBe(null);
+  });
+
   it('removeEventListener should remove an event listener as soon as the local container is created', () => {
     const remoteContainer = remoteDOM.createContainer(testId);
       const clickMock = jest.fn();
