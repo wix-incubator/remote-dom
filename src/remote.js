@@ -348,6 +348,16 @@ class RemoteInput extends RemoteElement {
   }
 }
 
+class RemoteSelect extends RemoteElement {
+  constructor () {
+    super('select');
+  }
+
+  get options () {
+    return Array.from(this.children).filter(child => child.tagName.toLowerCase() === 'option');
+  }
+}
+
 function createElement (nodeName) {
   let res;
   switch(nodeName) {
@@ -356,6 +366,9 @@ function createElement (nodeName) {
       break;
     case 'input':
       res = new RemoteInput();
+      break;
+    case 'select':
+      res = new RemoteSelect();
       break;
     default:
       res = new RemoteElement(nodeName);

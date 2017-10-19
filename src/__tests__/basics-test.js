@@ -630,8 +630,22 @@ describe('messages arriving before a local container was created', () => {
     });
   });
 
-it('input element should have value property directly', function () {
-  const input = remoteDOM.document.createElement('input');
+describe('specifically implemented remote elements APIs', () => {
+  describe('input', () => {
+    it('input element should have value property directly', () => {
+      const input = remoteDOM.document.createElement('input');
 
-  expect(input.constructor.prototype.hasOwnProperty('value')).toBe(true);
+      expect(input.constructor.prototype.hasOwnProperty('value')).toBe(true);
+    });
+  });
+
+  describe('select', () => {
+    it('select element should have and options getter', () => {
+      const select = remoteDOM.document.createElement('select');
+      const option = remoteDOM.document.createElement('option');
+      select.appendChild(option);
+
+      expect(select.options).toEqual([option]);
+    });
+  });
 });
