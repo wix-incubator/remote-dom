@@ -118,7 +118,7 @@ class MessagesQueue {
 
   flushQueue () {
     this.timer = null;
-    if (!this.pipe) {
+    if (!this.pipe || !this.queue.length) {
       return;
     }
     this.pipe.postMessage(this.queue);
