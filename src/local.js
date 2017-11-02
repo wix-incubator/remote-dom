@@ -16,6 +16,9 @@ const elementsByQueue = {};
 const eventsByQueueAndName = {};
 const nativeInvocationsByQueue = {};
 const pendingMessagesByQueue = {};
+const containerUpdatesObserversByQueue = {};
+const containerRemoteIdToNameByQueue = {};
+
 let win = null;
 let doc = null;
 
@@ -28,10 +31,11 @@ if (typeof window !== 'undefined') {
   setWindow(window);
 }
 
-function createContainer (queueIndex, domElement, name) {
+function createContainer (queueIndex, domElement, name, cb) {
   name = name || Constants.DEFAULT_NAME;
   const res = new LocalContainer(queueIndex, domElement, name);
   containersByQueueAndName[queueIndex][name] = res;
+  containerUpdatesObserversByQueue[queueIndex][name] = cb;
 
   const pendingMessages = pendingMessagesByQueue[queueIndex];
   pendingMessagesByQueue[queueIndex] = [];
@@ -102,10 +106,12 @@ const messageHandlers = wrapAll({
   [Commands.createContainer]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
     const containers = containersByQueueAndName[queueIndex];
+    const containerRemoteIdToName = containerRemoteIdToNameByQueue[queueIndex];
     const containerName = msg[2];
-
+    const containerRemoteId = msg[1];
+    containerRemoteIdToName[containerRemoteId] = containerName;
     if (containers[containerName]) {
-      elements[msg[1]] = containers[containerName].domElement;
+      elements[containerRemoteId] = containers[containerName].domElement;
       return true;
     }
 
@@ -364,9 +370,21 @@ const messageHandlers = wrapAll({
 }, createHandleMsgOrQueueWrapper);
 
 function applyMessages (queueIndex, messages) {
+  const updatedContainers = {};
   messages.forEach(msg => {
     const msgType = msg[0];
     messageHandlers[msgType](queueIndex, msg);
+    const containerId = msg[msg.length-1];
+    if (containerId) {
+      const name = containerRemoteIdToNameByQueue[queueIndex][containerId];
+      if (name) {
+        updatedContainers[name] = true;
+      }
+    }
+  });
+  Object.keys(updatedContainers).forEach(name => {
+    const callback = containerUpdatesObserversByQueue[queueIndex][name];
+    callback && callback();
   });
 }
 
@@ -413,6 +431,8 @@ function createMessageQueue (channel, timerFunction, nativeInvocations) {
   const queueIndex = queue.index;
   queuesByIndex[queueIndex] = queue;
   containersByQueueAndName[queueIndex] = {};
+  containerUpdatesObserversByQueue[queueIndex] = {};
+  containerRemoteIdToNameByQueue[queueIndex] = {};
   elementsByQueue[queueIndex] = {};
   nativeInvocationsByQueue[queueIndex] = nativeInvocations || {};
   pendingMessagesByQueue[queueIndex] = [];

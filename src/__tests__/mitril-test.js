@@ -12,7 +12,7 @@ let env;
 const m = require('mithril');
 
 beforeAll(() => {
-  env = testUtils.setup(windowOverrides, localDOM, remoteDOM);
+  env = testUtils.setup(windowOverrides);
 });
 
 beforeEach(() => {

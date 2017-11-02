@@ -12,6 +12,10 @@ const connectedElementsByIndex = {};
 
 const INLINE_EVENT = 'INLINE_EVENT';
 
+function addToQueue(command, host, args) {
+  queue.push([command, ...args, host]);
+}
+
 class RemoteStyle {
   constructor ($index) {
     this.$index = $index;
@@ -22,7 +26,7 @@ class RemoteStyle {
 StyleAttributes.forEach((k) => {
   Object.defineProperty(RemoteStyle.prototype, k, {
     set: function (val) {
-      queue.push([Commands.setStyle, this.$index, k, val]);
+      addToQueue(Commands.setStyle, this.$host, [this.$index, k, val]);
       this.$values[k] = val;
     },
     get: function () {
@@ -94,9 +98,8 @@ class RemoteNodeInternal {
       child.host = host;
     });
   }
-
   appendChild (child) {
-    queue.push([Commands.appendChild, this.$index, child.$index]);
+    addToQueue(Commands.appendChild, this.$host, [this.$index, child.$index]);
 
     const childrenToAppend = child.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? child.childNodes : [child];
     this.childNodes.splice(this.childNodes.length, 0, ...childrenToAppend);
@@ -104,7 +107,7 @@ class RemoteNodeInternal {
       childNode.parentNode = this;
       childNode.host = this.$host;
     });
-
+  //add host recursively to all children
     return child;
   }
 
@@ -117,7 +120,7 @@ class RemoteNodeInternal {
       throw new Error("Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.");
     }
 
-    queue.push([Commands.insertBefore, this.$index, child.$index, refChild ? refChild.$index : null]);
+    addToQueue(Commands.insertBefore, this.$host, [this.$index, child.$index, refChild ? refChild.$index : null]);
 
     const childrenToInsert = child.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? child.childNodes : [child];
     this.childNodes.splice(idx, 0, ...childrenToInsert);
@@ -130,7 +133,7 @@ class RemoteNodeInternal {
   }
 
   removeChild (child) {
-    queue.push([Commands.removeChild, this.$index, child.$index]);
+    addToQueue(Commands.removeChild, this.$host, [this.$index, child.$index]);
     const idx = this.childNodes.indexOf(child);
     if (idx !== -1) {
       this.childNodes.splice(idx, 1);
@@ -144,7 +147,7 @@ class RemoteNodeInternal {
       throw new Error("Failed to execute 'replaceChild' on 'Node': The node to be replaced is not a child of this node.");
     }
 
-    queue.push([Commands.replaceChild, this.$index, newChild.$index, oldChild.$index]);
+    addToQueue(Commands.replaceChild, this.$host, [this.$index, newChild.$index, oldChild.$index]);
 
     const childrenToInsert = newChild.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? newChild.childNodes : [newChild];
     this.childNodes.splice(idx, 1, ...childrenToInsert);
@@ -157,20 +160,20 @@ class RemoteNodeInternal {
   }
 
   addEventListener (evtType, callback, capture) {
-    addEventListener(this.$index, evtType, callback, capture);
+    addEventListener(this.$index, this.$host, evtType, callback, capture);
   }
 
   removeEventListener (evtType, callback) {
-    removeEventListener(this.$index, evtType, callback);
+    removeEventListener(this.$index, this.$host, evtType, callback);
   }
 
   dispatchEvent (event) {
-    dispatchEvent(this.$index, event);
+    dispatchEvent(this.$index, this.$host, event);
   }
 
   set value (val) {
     this.$value = val;
-    queue.push([Commands.setValue, this.$index, val]);
+    addToQueue(Commands.setValue, this.$host, [this.$index, val]);
   }
 
   get value () {
@@ -188,11 +191,11 @@ class RemoteNodeInternal {
       childTextNode.$host = this.$host;
       this.childNodes = [childTextNode];
     }
-    queue.push([Commands.textContent, this.$index, val, this.childNodes[0].$index]);
+    addToQueue(Commands.textContent, this.$host, [this.$index, val, this.childNodes[0].$index]);
   }
 
   invokeNative (name, args) {
-    queue.push([Commands.invokeNative, this.$index, name, args]);
+    addToQueue(Commands.invokeNative, this.$host, [this.$index, name, args]);
   }
 }
 
@@ -207,7 +210,7 @@ SupportedEvents.forEach(evtType => {
     set: function(evtHandler) {
       this.$eventHandlers = this.$eventHandlers || {};
       this.$eventHandlers[evtType] = evtHandler;
-      setEventListener(this.$index, evtType.slice(2), evtHandler);
+      setEventListener(this.$index, this.$host, evtType.slice(2), evtHandler);
     }
   });
 });
@@ -220,7 +223,7 @@ class RemoteTextualNode extends RemoteNode {
 
   set nodeValue (val) {
     this.$value = val;
-    queue.push([Commands.textContent, this.$index, val]);
+    addToQueue(Commands.textContent, this.$host, [this.$index, val]);
   }
 
   get nodeValue() {
@@ -253,13 +256,13 @@ class RemoteElement extends RemoteNode {
   }
 
   setAttribute (k, v) {
-    queue.push([Commands.setAttribute, this.$index, k, v]);
+    addToQueue(Commands.setAttribute, this.$host, [this.$index, k, v]);
     this.$attr[k] = {name: k, value: v};
     this[k] = v;
   }
 
   removeAttribute (k) {
-    queue.push([Commands.removeAttribute, this.$index, k]);
+    addToQueue(Commands.removeAttribute, this.$host, [this.$index, k]);
     delete this.$attr[k];
   }
 
@@ -268,11 +271,11 @@ class RemoteElement extends RemoteNode {
   }
 
   focus () {
-    queue.push([Commands.focus, this.$index]);
+    addToQueue(Commands.focus, this.$host, [this.$index]);
   }
 
   setSelectionRange (selectionStart, selectionEnd, selectionDirection) {
-    queue.push([Commands.setSelectionRange, this.$index, selectionStart, selectionEnd, selectionDirection]);
+    addToQueue(Commands.setSelectionRange, this.$host, [this.$index, selectionStart, selectionEnd, selectionDirection]);
   }
 
   get style() {
@@ -280,11 +283,11 @@ class RemoteElement extends RemoteNode {
   }
 
   set style (val) {
-    queue.push([Commands.setStyle, this.$index, val]);
+    addToQueue(Commands.setStyle, this.$host, [this.$index, val]);
   }
 
   set innerHTML (val) {
-    queue.push([Commands.innerHTML, this.$index, val]);
+    addToQueue(Commands.innerHTML, this.$host, [this.$index, val]);
     this.$innerHTML = val;
   }
 
@@ -293,7 +296,7 @@ class RemoteElement extends RemoteNode {
   }
 
   set innerText (val) {
-    queue.push([Commands.innerText, this.$index, val]);
+    addToQueue(Commands.innerText, this.$host, [this.$index, val]);
   }
 }
 
@@ -316,11 +319,11 @@ class RemoteVideo extends RemoteElement {
   }
 
   pause () {
-    queue.push([Commands.pause, this.$index]);
+    addToQueue(Commands.pause, this.$host, [this.$index]);
   }
 
   play () {
-    queue.push([Commands.play, this.$index]);
+    addToQueue(Commands.play, this.$host, [this.$index]);
   }
 
   get src () {
@@ -329,7 +332,7 @@ class RemoteVideo extends RemoteElement {
 
   set src (value) {
     this.$src = value;
-    queue.push([Commands.src, this.$index, value]);
+    addToQueue(Commands.src, this.$host, [this.$index, value]);
   }
 }
 
@@ -340,7 +343,7 @@ class RemoteInput extends RemoteElement {
 
   set value (val) {
     this.$value = val;
-    queue.push([Commands.setValue, this.$index, val]);
+    addToQueue(Commands.setValue, this.$host, [this.$index, val]);
   }
 
   get value () {
@@ -373,25 +376,25 @@ function createElement (nodeName) {
     default:
       res = new RemoteElement(nodeName);
   }
-  queue.push([Commands.createElement, res.$index, res.tagName]);
+  addToQueue(Commands.createElement, res.$host, [res.$index, res.tagName]);
   return res;
 }
 
 function createTextNode (text) {
   const res = new RemoteText(text);
-  queue.push([Commands.createTextNode, res.$index, text]);
+  addToQueue(Commands.createTextNode, res.$host, [res.$index, text]);
   return res;
 }
 
 function createComment (text) {
   const res = new RemoteComment(text);
-  queue.push([Commands.createComment, res.$index, text]);
+  addToQueue(Commands.createComment, res.$host, [res.$index, text]);
   return res;
 }
 
 function createDocumentFragment () {
   const res = new RemoteFragment();
-  queue.push([Commands.createDocumentFragment, res.$index]);
+  addToQueue(Commands.createDocumentFragment, res.$host, [res.$index]);
   return res;
 }
 
@@ -399,19 +402,19 @@ function createContainer (name) {
   name = name || Constants.DEFAULT_NAME;
   const res = new RemoteContainer();
   connectedElementsByIndex[res.$index] = res;
-  queue.push([Commands.createContainer, res.$index, name]);
+  addToQueue(Commands.createContainer, res.$host, [res.$index, name]);
   return res;
 }
 
-function addEventListener (target, evtName, callback, capture) {
+function addEventListener (target, host, evtName, callback, capture) {
   index++;
   eventsByTypeAndTarget[evtName] = eventsByTypeAndTarget[evtName] || {};
   eventsByTypeAndTarget[evtName][target] = eventsByTypeAndTarget[evtName][target] || {};
   eventsByTypeAndTarget[evtName][target][index] = callback;
-  queue.push([Commands.addEventListener, target, evtName, index, capture]);
+  addToQueue(Commands.addEventListener, host, [target, evtName, index, capture]);
 }
 
-function removeEventListener (target, evtName, callback) {
+function removeEventListener (target, host, evtName, callback) {
   eventsByTypeAndTarget[evtName] = eventsByTypeAndTarget[evtName] || {};
   eventsByTypeAndTarget[evtName][target] = eventsByTypeAndTarget[evtName][target] || {};
   const evts = eventsByTypeAndTarget[evtName][target];
@@ -419,16 +422,16 @@ function removeEventListener (target, evtName, callback) {
     return evts[evtIndex] === callback;
   });
   delete evts[idx];
-  queue.push([Commands.removeEventListener, target, evtName, index]);
+  addToQueue(Commands.removeEventListener, host, [target, evtName, index]);
 }
 
-function setEventListener(target, evtName, evtHandler) {
+function setEventListener(target, host, evtName, evtHandler) {
   eventsByTypeAndTarget[evtName] = eventsByTypeAndTarget[evtName] || {};
   eventsByTypeAndTarget[evtName][target] = eventsByTypeAndTarget[evtName][target] || {};
   if (evtHandler && !eventsByTypeAndTarget[evtName][target][INLINE_EVENT]) {
-    queue.push([Commands.addEventListener, target, evtName, INLINE_EVENT, false]);
+    addToQueue(Commands.addEventListener, host, [target, evtName, INLINE_EVENT, false]);
   } else if (!evtHandler && eventsByTypeAndTarget[evtName][target][INLINE_EVENT]) {
-    queue.push([Commands.removeEventListener, target, evtName, INLINE_EVENT]);
+    addToQueue(Commands.removeEventListener, host, [target, evtName, INLINE_EVENT]);
   }
   if (typeof evtHandler === 'string') {
     evtHandler = Function('event', evtHandler);
@@ -436,8 +439,8 @@ function setEventListener(target, evtName, evtHandler) {
   eventsByTypeAndTarget[evtName][target][INLINE_EVENT] = evtHandler;
 }
 
-function dispatchEvent (target, event) {
-  queue.push([Commands.dispatchEvent, target, event._type, event._eventInit, event._isCustom || false]);
+function dispatchEvent (target, host, event) {
+  addToQueue(Commands.dispatchEvent, host, [target, event._type, event._eventInit, event._isCustom || false]);
 }
 
 function updateConnectedElement(index, eventData) {
@@ -494,14 +497,14 @@ const document = {
   createTextNode,
   createComment,
   createDocumentFragment,
-  addEventListener: addEventListener.bind(null, Constants.DOCUMENT),
-  removeEventListener: removeEventListener.bind(null, Constants.DOCUMENT),
+  addEventListener: addEventListener.bind(null, Constants.DOCUMENT, null),
+  removeEventListener: removeEventListener.bind(null, Constants.DOCUMENT, null),
   documentElement: new RemoteElement('html'),
-  dispatchEvent: dispatchEvent.bind(null, Constants.DOCUMENT)
+  dispatchEvent: dispatchEvent.bind(null, Constants.DOCUMENT, null)
 };
 
 SupportedEvents.forEach((e) => {
-  document[e] = addEventListener.bind(null, Constants.DOCUMENT, e.substr(2));
+  document[e] = addEventListener.bind(null, Constants.DOCUMENT, null, e.substr(2));
 });
 
 class Event {
@@ -521,9 +524,9 @@ class CustomEvent extends Event {
 const window = {
   Event,
   CustomEvent,
-  dispatchEvent: dispatchEvent.bind(null, Constants.WINDOW),
-  addEventListener: addEventListener.bind(null, Constants.WINDOW),
-  removeEventListener: removeEventListener.bind(null, Constants.WINDOW),
+  dispatchEvent: dispatchEvent.bind(null, Constants.WINDOW, null),
+  addEventListener: addEventListener.bind(null, Constants.WINDOW, null),
+  removeEventListener: removeEventListener.bind(null, Constants.WINDOW, null),
   document: document,
   location: {href: 'https://localhost', protocol: 'https:'},
   navigator: {

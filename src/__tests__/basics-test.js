@@ -30,13 +30,15 @@ const documentOverrides = {
 let domContainer,remoteContainer;
 let counter = 0;
 let env;
+let cb;
 
 beforeEach(() => {
+  cb = jest.fn();
   env = testUtils.setup(windowOverrides, documentOverrides);
   domContainer = env.jsdomDefaultView.document.createElement('div');
   const id = 'container_' + counter++;
   env.jsdomDefaultView.document.body.appendChild(domContainer);
-  localDOM.createContainer(env.localQueue, domContainer, id);
+  localDOM.createContainer(env.localQueue, domContainer, id, cb);
   remoteContainer = remoteDOM.createContainer(id);
 });
 

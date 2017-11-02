@@ -12,7 +12,7 @@ let counter = 0;
 let env;
 
   beforeEach(() => {
-    env = testUtils.setup(windowOverrides, localDOM, remoteDOM);
+    env = testUtils.setup(windowOverrides);
     domContainer = env.jsdomDefaultView.document.createElement('div');
     id = 'container_' + counter++;
     env.jsdomDefaultView.document.body.appendChild(domContainer);
