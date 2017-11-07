@@ -4,7 +4,6 @@ import {Node, Commands, Constants, MessagesQueue, StyleAttributes, EventDOMNodeA
 
 let index = 0;
 let initMsgPromiseResolver;
-let initMsgPromise;
 
 const queue = new MessagesQueue();
 const eventsByTypeAndTarget = {};
@@ -336,6 +335,21 @@ class RemoteVideo extends RemoteElement {
   }
 }
 
+class RemoteImage extends  RemoteElement {
+  constructor () {
+    super('img');
+  }
+
+  get src () {
+    return this.$src;
+  }
+
+  set src (value) {
+    this.$src = value;
+    addToQueue(Commands.src, this.$host, [this.$index, value]);
+  }
+}
+
 class RemoteInput extends RemoteElement {
   constructor () {
     super('input');
@@ -366,6 +380,9 @@ function createElement (nodeName) {
   switch(nodeName) {
     case 'video':
       res = new RemoteVideo();
+      break;
+    case 'img':
+      res = new RemoteImage();
       break;
     case 'input':
       res = new RemoteInput();
@@ -483,13 +500,24 @@ function handleMessagesFromPipe(messages) {
 }
 
 function setChannel(channel, timerFunction) {
-  initMsgPromise = new Promise(resolve => {initMsgPromiseResolver = resolve;});
+  const initMsgPromise = new Promise(resolve => {initMsgPromiseResolver = resolve;});
+
   queue.setPipe(channel, handleMessagesFromPipe, timerFunction);
   queue.push([Commands.initiated]);
+
+  return initMsgPromise;
 }
 
-function onInit(cb) {
-  initMsgPromise.then(() => cb());
+function populateGlobalScope(scope) {
+  scope.window = window;
+  scope.document = document;
+  scope.requestAnimationFrame = window.requestAnimationFrame;
+  scope.Image = (width, height) => {
+    const imgNode = document.createElement('img');
+    imgNode.setAttribute('width', width);
+    imgNode.setAttribute('height', height);
+    return imgNode;
+  };
 }
 
 const document = {
@@ -542,9 +570,9 @@ connectedElementsByIndex[Constants.WINDOW] = window;
 connectedElementsByIndex[Constants.DOCUMENT] = document;
 
 export {
-  document,
   window,
+  document,
+  populateGlobalScope,
   createContainer,
-  setChannel,
-  onInit
+  setChannel
 };
