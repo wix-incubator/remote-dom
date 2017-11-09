@@ -5,6 +5,7 @@ module.exports = {
   entry: {
     local: './src/local.js',
     remote: './src/remote.js',
+    bundle: './src/index.js'
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
