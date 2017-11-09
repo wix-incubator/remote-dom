@@ -9,10 +9,11 @@ let domContainer, remoteContainer, id;
 let counter = 0;
 let env;
 
-const m = require('mithril');
+let m;
 
 beforeAll(() => {
   env = testUtils.setup(windowOverrides);
+  m = m || require('mithril');
 });
 
 beforeEach(() => {

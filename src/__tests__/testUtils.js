@@ -1,6 +1,4 @@
 const remoteDOM = require('../remote');
-global.window = remoteDOM.window; // eslint-disable-line no-undef
-global.document = remoteDOM.document; // eslint-disable-line no-undef
 const localDOM = require('../local');
 
 const trace = false;
@@ -20,6 +18,8 @@ function setup (windowOverrides, documentOverrides, timerFunc) {
       ProcessExternalResources: false
     }
   }).defaultView;
+
+  remoteDOM.populateGlobalScope(global); // eslint-disable-line no-undef
 
   Object.assign(jsdomDefaultView.window, windowOverrides);
   localDOM.setWindow(jsdomDefaultView.window);

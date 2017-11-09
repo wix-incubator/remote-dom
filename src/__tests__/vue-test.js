@@ -1,6 +1,6 @@
 import testUtils from './testUtils';
 
-const Vue = require('vue/dist/vue');
+let Vue;
 
 const localDOM = require('../local');
 const remoteDOM = require('../remote');
@@ -13,6 +13,7 @@ let env;
 
   beforeEach(() => {
     env = testUtils.setup(windowOverrides);
+    Vue = Vue || require('vue/dist/vue');
     domContainer = env.jsdomDefaultView.document.createElement('div');
     id = 'container_' + counter++;
     env.jsdomDefaultView.document.body.appendChild(domContainer);

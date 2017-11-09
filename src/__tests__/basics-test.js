@@ -100,6 +100,29 @@ it('node replaceChild', () => {
 });
 
 describe('initialization', () => {
+  describe('populateGlobalScope', () => {
+    it('should override window and document', () => {
+      expect(window).toBe(remoteDOM.window); // eslint-disable-line no-undef
+      expect(document).toBe(remoteDOM.document); // eslint-disable-line no-undef
+    });
+
+    it('should override Image', () => {
+      const width = 400;
+      const height = 500;
+      const img = new Image(width, height); // eslint-disable-line no-undef
+
+      remoteContainer.appendChild(img);
+
+      const remoteImg = domContainer.firstChild;
+      expect(img.tagName.toLowerCase()).toBe('img');
+      expect(img.width).toBe(width);
+      expect(img.height).toBe(height);
+      expect(remoteImg.tagName.toLowerCase()).toBe('img');
+      expect(remoteImg.width).toBe(width);
+      expect(remoteImg.height).toBe(height);
+    });
+  });
+
   it('should update remote window properties from actual local window on initialization', function () {
     const windowOverridesWithoutMethods = Object.assign({}, windowOverrides);
     delete windowOverridesWithoutMethods.addEventListener;
@@ -116,11 +139,15 @@ describe('initialization', () => {
     expect(env.jsdomDefaultView.window.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
   });
 
-  it('onInit registered handlers are invoked upon init', (done) => {
-    const remoteHandler = testUtils.setupRemote();
-    remoteDOM.onInit(() => {
-      done();
-    });
+  it('registered setChannel callbacks invoked upon handshake with remote', done => {
+    let remoteHandler;
+
+    remoteDOM.setChannel({
+      postMessage: function () {},
+      addEventListener: function (msgType, handler) {
+        remoteHandler = handler;
+      }
+    }, cb => cb()).then(done);
 
     remoteHandler({data: JSON.stringify({REMOTE_DOM: [[Constants.INIT, {}]]})});
   });
