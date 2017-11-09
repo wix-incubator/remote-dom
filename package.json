@@ -52,6 +52,7 @@
   },
   "jest": {
     "testRegex": "__tests__.*-test.js$",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "collectCoverageFrom": ["src/**/*.{js,jsx}", "!src/__tests__/**"]
   }
 }
