@@ -508,16 +508,18 @@ function setChannel(channel, timerFunction) {
   return initMsgPromise;
 }
 
+function Image(width, height) {
+  const imgNode = document.createElement('img');
+  imgNode.setAttribute('width', width);
+  imgNode.setAttribute('height', height);
+  return imgNode;
+}
+
 function populateGlobalScope(scope) {
   scope.window = window;
   scope.document = document;
   scope.requestAnimationFrame = window.requestAnimationFrame;
-  scope.Image = (width, height) => {
-    const imgNode = document.createElement('img');
-    imgNode.setAttribute('width', width);
-    imgNode.setAttribute('height', height);
-    return imgNode;
-  };
+  scope.Image = Image;
 }
 
 const document = {
@@ -562,7 +564,8 @@ const window = {
   },
   history: {},
   requestAnimationFrame: setTimeout,
-  cancelAnimationFrame: clearTimeout
+  cancelAnimationFrame: clearTimeout,
+  Image: Image
 };
 window.top = window;
 
