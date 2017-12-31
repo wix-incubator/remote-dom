@@ -1,6 +1,6 @@
 {
   "name": "@shimil/remote-dom",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "description": "remote-dom AKA Virtual Virtual DOM",
   "main": "./dist/bundle.min.js",
   "scripts": {
