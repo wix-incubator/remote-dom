@@ -61,6 +61,7 @@ const Constants = {
   EVENT: 'EVENT'
 };
 
+const QUEUE_SIZE_THRESHOLD = 5000;
 let index = 0;
 
 class Pipe {
@@ -104,16 +105,25 @@ class MessagesQueue {
     this.pipe = new Pipe(channel, handler);
     this.timerFunction = timerFunction || ((cb) => {
       /*global setTimeout*/
-      setTimeout(cb, 0);
+      return setTimeout(cb, 0);
     });
+    this.isDefaultTimer = !timerFunction;
     this.schedule();
   }
 
   schedule () {
-    if (this.timer || !this.pipe) {
+    if (!this.pipe) {
       return;
     }
-    this.timer = this.timerFunction(this.flushQueue.bind(this));
+
+    if (this.timer && this.isDefaultTimer && this.queue.length > QUEUE_SIZE_THRESHOLD) {
+      /*global clearTimeout*/
+      clearTimeout(this.timer);
+      this.flushQueue();
+      return;
+    }
+
+    this.timer = this.timer || this.timerFunction(this.flushQueue.bind(this));
   }
 
   flushQueue () {
