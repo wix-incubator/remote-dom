@@ -1,14 +1,6 @@
 /* eslint-env browser */
 
-import {Commands, Constants, MessagesQueue, EventDOMNodeAttributes} from './common';
-class LocalContainer {
-  constructor (queueIndex, domElement, name) {
-    this.domElement = domElement;
-    this.name = name;
-    this.queueIndex = queueIndex;
-    this.index = null;
-  }
-}
+import {Commands, Constants, MessagesQueue, EventDOMNodeAttributes, generateGuid} from './common';
 
 const containersByQueueAndName = {};
 const queuesByIndex = {};
@@ -22,6 +14,15 @@ const containerRemoteIdToNameByQueue = {};
 let win = null;
 let doc = null;
 
+class LocalContainer {
+  constructor (queueIndex, domElement, name) {
+    this.domElement = domElement;
+    this.name = name;
+    this.queueIndex = queueIndex;
+    this.index = null;
+  }
+}
+
 function setWindow (windowObj) {
   win = windowObj;
   doc = windowObj.document;
@@ -31,7 +32,49 @@ if (typeof window !== 'undefined') {
   setWindow(window);
 }
 
-function createContainer (queueIndex, domElement, name, cb) {
+function serializeNodeAttributes(node) {
+  const attributes = node.attributes || {length: 0};
+  const result = {};
+
+  for (let i = 0; i < attributes.length; i++) {
+    const {name, value} = attributes[i];
+    result[i] = {
+      name,
+      value
+    };
+  }
+
+  return result;
+}
+
+function serializeDomNode(node, serializedChildren) {
+  return {
+    id: node[Constants.NODE_ID],
+    nodeName: node.nodeName,
+    nodeType: node.nodeType,
+    nodeValue: node.nodeValue,
+    value: node.value,
+    attributes: serializeNodeAttributes(node),
+    className: node.className,
+    children: serializedChildren
+  };
+}
+
+function addDomNodeToElementsMap(queueIndex, node) {
+  elementsByQueue[queueIndex][node[Constants.NODE_ID]] = node;
+  node[Constants.QUEUE_INDEX] = queueIndex;
+}
+
+function addIdsAndTraverseDomTree(node, iteratees = []) {
+  node[Constants.NODE_ID] = generateGuid();
+  const childrenResultsForAllIteratees = Array.from(node.childNodes).map(child => addIdsAndTraverseDomTree(child, iteratees));
+  return iteratees.map((iteratee, index) => {
+    const childrenResultsForSpecificIteratee = childrenResultsForAllIteratees.map(childFullResults => childFullResults[index]);
+    return iteratee(node, childrenResultsForSpecificIteratee);
+  });
+}
+
+function createContainer(queueIndex, domElement, name, cb) {
   name = name || Constants.DEFAULT_NAME;
   const res = new LocalContainer(queueIndex, domElement, name);
   containersByQueueAndName[queueIndex][name] = res;
@@ -112,6 +155,15 @@ const messageHandlers = wrapAll({
     containerRemoteIdToName[containerRemoteId] = containerName;
     if (containers[containerName]) {
       elements[containerRemoteId] = containers[containerName].domElement;
+      const isContainerTreeAlreadyRendered = containers[containerName].domElement.children.length > 0;
+      if (isContainerTreeAlreadyRendered) {
+        const results = addIdsAndTraverseDomTree(containers[containerName].domElement, [addDomNodeToElementsMap.bind(null, queueIndex), serializeDomNode]);
+        const serializedTree = results[1];
+        queuesByIndex[queueIndex].push([Commands.createContainerAck, containerName, serializedTree]);
+      } else {
+        queuesByIndex[queueIndex].push([Commands.createContainerAck, containerName, null]);
+      }
+
       return true;
     }
 

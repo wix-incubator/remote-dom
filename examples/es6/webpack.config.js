@@ -1,3 +1,5 @@
+const path = require('path');
+
 module.exports = {
   entry: {
     'todomvc-worker': './src/todomvc/worker',
@@ -7,7 +9,7 @@ module.exports = {
   },
   devtool: 'inline-source-map',
   output: {
-    path: './dist',
+    path: path.join(__dirname, 'dist'),
     filename: '[name]-bundle.js',
     libraryTarget: 'umd'
   },

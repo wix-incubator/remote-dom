@@ -47,7 +47,8 @@ const Commands = {
   play: 'play',
   src: 'src',
   focus: 'focus',
-  setSelectionRange: 'setSelectionRange'
+  setSelectionRange: 'setSelectionRange',
+  createContainerAck: 'createContainerAck'
 };
 
 const Constants = {
@@ -58,7 +59,8 @@ const Constants = {
   QUEUE_INDEX: 'QUEUE_INDEX',
   NODE_INDEX: 'NODE_INDEX',
   INIT: 'INIT',
-  EVENT: 'EVENT'
+  EVENT: 'EVENT',
+  NODE_ID: '_remotemDomNodeId'
 };
 
 let index = 0;
@@ -126,6 +128,16 @@ class MessagesQueue {
   }
 }
 
+const generateGuid = () => {
+  function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+  }
+  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+    s4() + '-' + s4() + s4() + s4();
+};
+
 const EventDOMNodeAttributes = [
   'currentTarget',
   'originalTarget',
@@ -148,5 +160,6 @@ export {
   Constants,
   StyleAttributes,
   SupportedEvents,
-  EventDOMNodeAttributes
+  EventDOMNodeAttributes,
+  generateGuid
 };

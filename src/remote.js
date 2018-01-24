@@ -1,31 +1,62 @@
 /* eslint-env worker */
 
-import {Node, Commands, Constants, MessagesQueue, StyleAttributes, EventDOMNodeAttributes, SupportedEvents} from './common';
+import {Node, Commands, Constants, MessagesQueue, StyleAttributes, EventDOMNodeAttributes, SupportedEvents, generateGuid} from './common';
 
-let index = 0;
+let eventListenersIndex = 0;
 let initMsgPromiseResolver;
 
 const queue = new MessagesQueue();
 const eventsByTypeAndTarget = {};
-const connectedElementsByIndex = {};
+const connectedElementsById = {};
+const createContainerResolversByName = {};
+const messenger = (() => {
+  let isEnabled = true;
+
+  return {
+    disable: () => isEnabled = false,
+    enable: () => isEnabled = true,
+    addToQueue: (command, host, args) => {
+      if (isEnabled) {
+        queue.push([command, ...args, host]);
+      }
+    }
+  };
+})();
 
 const INLINE_EVENT = 'INLINE_EVENT';
 
-function addToQueue(command, host, args) {
-  queue.push([command, ...args, host]);
-}
-
 class RemoteStyle {
-  constructor ($index) {
-    this.$index = $index;
+  constructor (id) {
+    this.$id = id;
     this.$values = {};
   }
+}
+
+function deserializeDomNode(serializedNode) {
+  const id = serializedNode.id;
+  const element = createElementByType(serializedNode, id);
+  element.className = serializedNode.className;
+  element.nodeValue = serializedNode.nodeValue;
+  element.value = serializedNode.value;
+  Object.keys(serializedNode.attributes).forEach(i => {
+    const attribute = serializedNode.attributes[i];
+    element.setAttribute(attribute.name, attribute.value);
+  });
+  return element;
+}
+
+function deserializeDomTree(serializedNode, parentElement, element) {
+  element = element || deserializeDomNode(serializedNode);
+  const children = serializedNode.children;
+  children.forEach(child => deserializeDomTree(child, element));
+  parentElement && parentElement.appendChild(element);
+  return element;
 }
 
 StyleAttributes.forEach((k) => {
   Object.defineProperty(RemoteStyle.prototype, k, {
     set: function (val) {
-      addToQueue(Commands.setStyle, this.$host, [this.$index, k, val]);
+      messenger.addToQueue(Commands.setStyle, this.$host, [this.$id, k, val]);
       this.$values[k] = val;
     },
     get: function () {
@@ -35,10 +66,9 @@ StyleAttributes.forEach((k) => {
 });
 
 class RemoteNodeInternal {
-  constructor (nodeType, val) {
-    index++;
+  constructor (nodeType, val, customId) {
+    this.$id = customId === undefined ? generateGuid() : customId;
     this.nodeType = nodeType;
-    this.$index = index;
     this.$host = null;
     this.parentNode = null;
     this.childNodes = [];
@@ -46,7 +76,7 @@ class RemoteNodeInternal {
   }
 
   toString() {
-    return `RemoteNode({nodeType:${this.nodeType},index:${this.$index}})`;
+    return `RemoteNode({nodeType:${this.nodeType},id:${this.$id}})`;
   }
 
   get children () {
@@ -89,16 +119,16 @@ class RemoteNodeInternal {
     }
     this.$host = host;
     if (host) {
-      connectedElementsByIndex[this.$index] = this;
+      connectedElementsById[this.$id] = this;
     } else {
-      delete connectedElementsByIndex[this.$index];
+      delete connectedElementsById[this.$id];
     }
     this.childNodes.forEach((child) => {
       child.host = host;
     });
   }
   appendChild (child) {
-    addToQueue(Commands.appendChild, this.$host, [this.$index, child.$index]);
+    messenger.addToQueue(Commands.appendChild, this.$host, [this.$id, child.$id]);
 
     const childrenToAppend = child.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? child.childNodes : [child];
     this.childNodes.splice(this.childNodes.length, 0, ...childrenToAppend);
@@ -119,7 +149,7 @@ class RemoteNodeInternal {
       throw new Error("Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.");
     }
 
-    addToQueue(Commands.insertBefore, this.$host, [this.$index, child.$index, refChild ? refChild.$index : null]);
+    messenger.addToQueue(Commands.insertBefore, this.$host, [this.$id, child.$id, refChild ? refChild.$id : null]);
 
     const childrenToInsert = child.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? child.childNodes : [child];
     this.childNodes.splice(idx, 0, ...childrenToInsert);
@@ -132,7 +162,7 @@ class RemoteNodeInternal {
   }
 
   removeChild (child) {
-    addToQueue(Commands.removeChild, this.$host, [this.$index, child.$index]);
+    messenger.addToQueue(Commands.removeChild, this.$host, [this.$id, child.$id]);
     const idx = this.childNodes.indexOf(child);
     if (idx !== -1) {
       this.childNodes.splice(idx, 1);
@@ -146,7 +176,7 @@ class RemoteNodeInternal {
       throw new Error("Failed to execute 'replaceChild' on 'Node': The node to be replaced is not a child of this node.");
     }
 
-    addToQueue(Commands.replaceChild, this.$host, [this.$index, newChild.$index, oldChild.$index]);
+    messenger.addToQueue(Commands.replaceChild, this.$host, [this.$id, newChild.$id, oldChild.$id]);
 
     const childrenToInsert = newChild.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? newChild.childNodes : [newChild];
     this.childNodes.splice(idx, 1, ...childrenToInsert);
@@ -159,20 +189,20 @@ class RemoteNodeInternal {
   }
 
   addEventListener (evtType, callback, capture) {
-    addEventListener(this.$index, this.$host, evtType, callback, capture);
+    addEventListener(this.$id, this.$host, evtType, callback, capture);
   }
 
   removeEventListener (evtType, callback) {
-    removeEventListener(this.$index, this.$host, evtType, callback);
+    removeEventListener(this.$id, this.$host, evtType, callback);
   }
 
   dispatchEvent (event) {
-    dispatchEvent(this.$index, this.$host, event);
+    dispatchEvent(this.$id, this.$host, event);
   }
 
   set value (val) {
     this.$value = val;
-    addToQueue(Commands.setValue, this.$host, [this.$index, val]);
+    messenger.addToQueue(Commands.setValue, this.$host, [this.$id, val]);
   }
 
   get value () {
@@ -190,11 +220,11 @@ class RemoteNodeInternal {
       childTextNode.$host = this.$host;
       this.childNodes = [childTextNode];
     }
-    addToQueue(Commands.textContent, this.$host, [this.$index, val, this.childNodes[0].$index]);
+    messenger.addToQueue(Commands.textContent, this.$host, [this.$id, val, this.childNodes[0].$id]);
   }
 
   invokeNative (name, args) {
-    addToQueue(Commands.invokeNative, this.$host, [this.$index, name, args]);
+    messenger.addToQueue(Commands.invokeNative, this.$host, [this.$id, name, args]);
   }
 }
 
@@ -209,20 +239,20 @@ SupportedEvents.forEach(evtType => {
     set: function(evtHandler) {
       this.$eventHandlers = this.$eventHandlers || {};
       this.$eventHandlers[evtType] = evtHandler;
-      setEventListener(this.$index, this.$host, evtType.slice(2), evtHandler);
+      setEventListener(this.$id, this.$host, evtType.slice(2), evtHandler);
     }
   });
 });
 
 class RemoteTextualNode extends RemoteNode {
-  constructor (text) {
-    super(Node.TEXT_NODE, text);
+  constructor (nodeType, text, id) {
+    super(nodeType, text, id);
     this.$value = text;
   }
 
   set nodeValue (val) {
     this.$value = val;
-    addToQueue(Commands.textContent, this.$host, [this.$index, val]);
+    messenger.addToQueue(Commands.textContent, this.$host, [this.$id, val]);
   }
 
   get nodeValue() {
@@ -231,22 +261,22 @@ class RemoteTextualNode extends RemoteNode {
 }
 
 class RemoteComment extends RemoteTextualNode {
-  constructor (text) {
-    super(Node.COMMENT_NODE, text);
+  constructor (text, id) {
+    super(Node.COMMENT_NODE, text, id);
   }
 }
 
 class RemoteText extends RemoteTextualNode {
-  constructor (text) {
-    super(Node.TEXT_NODE, text);
+  constructor (text, id) {
+    super(Node.TEXT_NODE, text, id);
   }
 }
 
 class RemoteElement extends RemoteNode {
-  constructor (tagName) {
-    super(Node.ELEMENT_NODE);
+  constructor (tagName, customId) {
+    super(Node.ELEMENT_NODE, undefined, customId);
     this.tagName = tagName.toUpperCase();
-    this.$style = new RemoteStyle(this.$index);
+    this.$style = new RemoteStyle(this.$id);
     this.$attr = {};
   }
 
@@ -255,38 +285,54 @@ class RemoteElement extends RemoteNode {
   }
 
   setAttribute (k, v) {
-    addToQueue(Commands.setAttribute, this.$host, [this.$index, k, v]);
+    messenger.addToQueue(Commands.setAttribute, this.$host, [this.$id, k, v]);
     this.$attr[k] = {name: k, value: v};
     this[k] = v;
   }
 
+  getAttribute (k) {
+    return this.$attr[k] && this.$attr[k].value;
+  }
+
   removeAttribute (k) {
-    addToQueue(Commands.removeAttribute, this.$host, [this.$index, k]);
+    messenger.addToQueue(Commands.removeAttribute, this.$host, [this.$id, k]);
     delete this.$attr[k];
   }
 
-  hasAttribute(k) {
+  hasAttribute (k) {
     return this.$attr.hasOwnProperty(k);
   }
 
   focus () {
-    addToQueue(Commands.focus, this.$host, [this.$index]);
+    messenger.addToQueue(Commands.focus, this.$host, [this.$id]);
   }
 
   setSelectionRange (selectionStart, selectionEnd, selectionDirection) {
-    addToQueue(Commands.setSelectionRange, this.$host, [this.$index, selectionStart, selectionEnd, selectionDirection]);
+    messenger.addToQueue(Commands.setSelectionRange, this.$host, [this.$id, selectionStart, selectionEnd, selectionDirection]);
   }
 
-  get style() {
+  get attributes () {
+    return Object.keys(this.$attr).map(name => {
+      return {
+        name,
+        value: this[this.$attr[name]]
+      };
+    });
+    // const result = {...this.$attr};
+    // result.length = Object.keys(result).length;
+    // return result;
+  }
+
+  get style () {
     return this.$style;
   }
 
   set style (val) {
-    addToQueue(Commands.setStyle, this.$host, [this.$index, val]);
+    messenger.addToQueue(Commands.setStyle, this.$host, [this.$id, val]);
   }
 
   set innerHTML (val) {
-    addToQueue(Commands.innerHTML, this.$host, [this.$index, val]);
+    messenger.addToQueue(Commands.innerHTML, this.$host, [this.$id, val]);
     this.$innerHTML = val;
   }
 
@@ -295,14 +341,14 @@ class RemoteElement extends RemoteNode {
   }
 
   set innerText (val) {
-    addToQueue(Commands.innerText, this.$host, [this.$index, val]);
+    messenger.addToQueue(Commands.innerText, this.$host, [this.$id, val]);
   }
 }
 
 class RemoteContainer extends RemoteElement {
   constructor () {
     super('div');
-    this.$host = this.$index;
+    this.$host = this.$id;
   }
 }
 
@@ -313,16 +359,16 @@ class RemoteFragment extends RemoteNode {
 }
 
 class RemoteVideo extends RemoteElement {
-  constructor () {
-    super('video');
+  constructor (customId) {
+    super('video', customId);
   }
 
   pause () {
-    addToQueue(Commands.pause, this.$host, [this.$index]);
+    messenger.addToQueue(Commands.pause, this.$host, [this.$id]);
   }
 
   play () {
-    addToQueue(Commands.play, this.$host, [this.$index]);
+    messenger.addToQueue(Commands.play, this.$host, [this.$id]);
   }
 
   get src () {
@@ -331,13 +377,13 @@ class RemoteVideo extends RemoteElement {
 
   set src (value) {
     this.$src = value;
-    addToQueue(Commands.src, this.$host, [this.$index, value]);
+    messenger.addToQueue(Commands.src, this.$host, [this.$id, value]);
   }
 }
 
 class RemoteImage extends  RemoteElement {
-  constructor () {
-    super('img');
+  constructor (customId) {
+    super('img', customId);
   }
 
   get src () {
@@ -346,18 +392,18 @@ class RemoteImage extends  RemoteElement {
 
   set src (value) {
     this.$src = value;
-    addToQueue(Commands.src, this.$host, [this.$index, value]);
+    messenger.addToQueue(Commands.src, this.$host, [this.$id, value]);
   }
 }
 
 class RemoteInput extends RemoteElement {
-  constructor () {
-    super('input');
+  constructor (customId) {
+    super('input', customId);
   }
 
   set value (val) {
     this.$value = val;
-    addToQueue(Commands.setValue, this.$host, [this.$index, val]);
+    messenger.addToQueue(Commands.setValue, this.$host, [this.$id, val]);
   }
 
   get value () {
@@ -366,8 +412,8 @@ class RemoteInput extends RemoteElement {
 }
 
 class RemoteSelect extends RemoteElement {
-  constructor () {
-    super('select');
+  constructor (customId) {
+    super('select', customId);
   }
 
   get options () {
@@ -375,60 +421,82 @@ class RemoteSelect extends RemoteElement {
   }
 }
 
-function createElement (nodeName) {
+function createElementByType(serializedNode, id) {
+  switch (serializedNode.nodeType) {
+    case Node.TEXT_NODE:
+      return createTextNode(serializedNode.textContent, id);
+    case Node.ELEMENT_NODE:
+      return createElement(serializedNode.nodeName, id);
+    case Node.COMMENT_NODE:
+      return createComment(serializedNode.nodeName, id);
+    default:
+      return createElement(serializedNode.nodeName, id);
+  }
+}
+
+function createElement (nodeName, customId) {
   let res;
   switch(nodeName) {
     case 'video':
-      res = new RemoteVideo();
+      res = new RemoteVideo(customId);
       break;
     case 'img':
-      res = new RemoteImage();
+      res = new RemoteImage(customId);
       break;
     case 'input':
-      res = new RemoteInput();
+      res = new RemoteInput(customId);
       break;
     case 'select':
-      res = new RemoteSelect();
+      res = new RemoteSelect(customId);
       break;
     default:
-      res = new RemoteElement(nodeName);
+      res = new RemoteElement(nodeName, customId);
   }
-  addToQueue(Commands.createElement, res.$host, [res.$index, res.tagName]);
+  messenger.addToQueue(Commands.createElement, res.$host, [res.$id, res.tagName]);
   return res;
 }
 
-function createTextNode (text) {
-  const res = new RemoteText(text);
-  addToQueue(Commands.createTextNode, res.$host, [res.$index, text]);
+function createTextNode (text, id) {
+  const res = new RemoteText(text, id);
+  messenger.addToQueue(Commands.createTextNode, res.$host, [res.$id, text]);
   return res;
 }
 
-function createComment (text) {
-  const res = new RemoteComment(text);
-  addToQueue(Commands.createComment, res.$host, [res.$index, text]);
+function createComment (text, id) {
+  const res = new RemoteComment(text, id);
+  messenger.addToQueue(Commands.createComment, res.$host, [res.$id, text]);
   return res;
 }
 
 function createDocumentFragment () {
   const res = new RemoteFragment();
-  addToQueue(Commands.createDocumentFragment, res.$host, [res.$index]);
+  messenger.addToQueue(Commands.createDocumentFragment, res.$host, [res.$id]);
   return res;
 }
 
 function createContainer (name) {
   name = name || Constants.DEFAULT_NAME;
   const res = new RemoteContainer();
-  connectedElementsByIndex[res.$index] = res;
-  addToQueue(Commands.createContainer, res.$host, [res.$index, name]);
-  return res;
+  connectedElementsById[res.$id] = res;
+  messenger.addToQueue(Commands.createContainer, res.$host, [res.$id, name]);
+  return new Promise(resolve => {
+    createContainerResolversByName[name] = serializedTree => {
+      if (serializedTree) {
+        messenger.disable();
+        deserializeDomTree(serializedTree, null, res);
+        messenger.enable();
+      }
+      resolve(res);
+    };
+  });
 }
 
 function addEventListener (target, host, evtName, callback, capture) {
-  index++;
+  eventListenersIndex++;
   eventsByTypeAndTarget[evtName] = eventsByTypeAndTarget[evtName] || {};
   eventsByTypeAndTarget[evtName][target] = eventsByTypeAndTarget[evtName][target] || {};
-  eventsByTypeAndTarget[evtName][target][index] = callback;
-  addToQueue(Commands.addEventListener, host, [target, evtName, index, capture]);
+  eventsByTypeAndTarget[evtName][target][eventListenersIndex] = callback;
+  messenger.addToQueue(Commands.addEventListener, host, [target, evtName, eventListenersIndex, capture]);
 }
 
 function removeEventListener (target, host, evtName, callback) {
@@ -439,16 +507,16 @@ function removeEventListener (target, host, evtName, callback) {
     return evts[evtIndex] === callback;
   });
   delete evts[idx];
-  addToQueue(Commands.removeEventListener, host, [target, evtName, index]);
+  messenger.addToQueue(Commands.removeEventListener, host, [target, evtName, eventListenersIndex]);
 }
 
 function setEventListener(target, host, evtName, evtHandler) {
   eventsByTypeAndTarget[evtName] = eventsByTypeAndTarget[evtName] || {};
   eventsByTypeAndTarget[evtName][target] = eventsByTypeAndTarget[evtName][target] || {};
   if (evtHandler && !eventsByTypeAndTarget[evtName][target][INLINE_EVENT]) {
-    addToQueue(Commands.addEventListener, host, [target, evtName, INLINE_EVENT, false]);
+    messenger.addToQueue(Commands.addEventListener, host, [target, evtName, INLINE_EVENT, false]);
   } else if (!evtHandler && eventsByTypeAndTarget[evtName][target][INLINE_EVENT]) {
-    addToQueue(Commands.removeEventListener, host, [target, evtName, INLINE_EVENT]);
+    messenger.addToQueue(Commands.removeEventListener, host, [target, evtName, INLINE_EVENT]);
   }
   if (typeof evtHandler === 'string') {
     evtHandler = Function('event', evtHandler);
@@ -457,12 +525,12 @@ function setEventListener(target, host, evtName, evtHandler) {
 }
 
 function dispatchEvent (target, host, event) {
-  addToQueue(Commands.dispatchEvent, host, [target, event._type, event._eventInit, event._isCustom || false]);
+  messenger.addToQueue(Commands.dispatchEvent, host, [target, event._type, event._eventInit, event._isCustom || false]);
 }
 
-function updateConnectedElement(index, eventData) {
-  if (connectedElementsByIndex[index] && eventData[index]) {
-    Object.assign(connectedElementsByIndex[index], eventData[index]);
+function updateConnectedElement(id, eventData) {
+  if (connectedElementsById[id] && eventData[id]) {
+    Object.assign(connectedElementsById[id], eventData[id]);
   }
 }
 
@@ -470,23 +538,29 @@ function handleMessagesFromPipe(messages) {
   messages.forEach(msg => {
     const evtIntent = msg[0];
     switch (evtIntent) {
-      case (Constants.INIT): {
+      case Constants.INIT: {
         initMsgPromiseResolver && initMsgPromiseResolver();
         const eventData = msg[1];
-        Object.keys(eventData).forEach((index) => {
-          updateConnectedElement(index, eventData);
+        Object.keys(eventData).forEach((id) => {
+          updateConnectedElement(id, eventData);
         });
-      }
         break;
+      }
+      case Commands.createContainerAck: {
+        const name = msg[1];
+        const serializedTree = msg[2];
+        createContainerResolversByName[name](serializedTree);
+        break;
+      }
       default: {
         const evtTarget = msg[1];
         const evtName = msg[2];
         const evtJSON = msg[3];
-        Object.keys(evtJSON.extraData).forEach((index) => {
-          updateConnectedElement(index, evtJSON.extraData);
+        Object.keys(evtJSON.extraData).forEach((id) => {
+          updateConnectedElement(id, evtJSON.extraData);
         });
         EventDOMNodeAttributes.forEach((field) => {
-          evtJSON[field] = (evtJSON[field] instanceof Array) ? evtJSON[field].map(val => connectedElementsByIndex[val]) : connectedElementsByIndex[evtJSON[field]];
+          evtJSON[field] = (evtJSON[field] instanceof Array) ? evtJSON[field].map(val => connectedElementsById[val]) : connectedElementsById[evtJSON[field]];
         });
 
         if (eventsByTypeAndTarget[evtName] && eventsByTypeAndTarget[evtName][evtTarget]) {
@@ -569,8 +643,8 @@ const window = {
 };
 window.top = window;
 
-connectedElementsByIndex[Constants.WINDOW] = window;
-connectedElementsByIndex[Constants.DOCUMENT] = document;
+connectedElementsById[Constants.WINDOW] = window;
+connectedElementsById[Constants.DOCUMENT] = document;
 
 export {
   window,
