@@ -1,6 +1,4 @@
 const remoteDOM = require('../remote');
-global.window = remoteDOM.window; // eslint-disable-line no-undef
-global.document = remoteDOM.document; // eslint-disable-line no-undef
 const localDOM = require('../local');
 
 const trace = false;
@@ -12,7 +10,7 @@ function syncTimeout (cb) {
   cb();
 }
 
-function setup (windowOverrides) {
+function setup (windowOverrides, documentOverrides, timerFunc) {
   const jsdom = require('jsdom');
   const jsdomDefaultView = jsdom.jsdom({
     features: {
@@ -20,6 +18,8 @@ function setup (windowOverrides) {
       ProcessExternalResources: false
     }
   }).defaultView;
+
+  remoteDOM.populateGlobalScope(global); // eslint-disable-line no-undef
 
   Object.assign(jsdomDefaultView.window, windowOverrides);
   localDOM.setWindow(jsdomDefaultView.window);
@@ -41,7 +41,7 @@ function setup (windowOverrides) {
     addEventListener: function (msgType, handler) {
       localHandler = handler;
     }
-  }, syncTimeout, {native: nativeInvocationMock});
+  }, timerFunc || syncTimeout, {native: nativeInvocationMock});
 
   remoteDOM.setChannel({
     postMessage: function (message) {
@@ -55,7 +55,7 @@ function setup (windowOverrides) {
     addEventListener: function (msgType, handler) {
       remoteHandler = handler;
     }
-  }, syncTimeout);
+  }, timerFunc || syncTimeout);
 
   return {
     jsdomDefaultView,
@@ -64,7 +64,7 @@ function setup (windowOverrides) {
   };
 }
 
-function setupRemote() {
+function setupRemote(timerFunc) {
   let remoteHandler;
 
   remoteDOM.setChannel({
@@ -72,7 +72,7 @@ function setupRemote() {
     addEventListener: function (msgType, handler) {
       remoteHandler = handler;
     }
-  }, syncTimeout);
+  }, timerFunc || syncTimeout);
 
   return remoteHandler;
 }

@@ -30,13 +30,15 @@ const documentOverrides = {
 let domContainer,remoteContainer;
 let counter = 0;
 let env;
+let cb;
 
 beforeEach(() => {
+  cb = jest.fn();
   env = testUtils.setup(windowOverrides, documentOverrides);
   domContainer = env.jsdomDefaultView.document.createElement('div');
   const id = 'container_' + counter++;
   env.jsdomDefaultView.document.body.appendChild(domContainer);
-  localDOM.createContainer(env.localQueue, domContainer, id);
+  localDOM.createContainer(env.localQueue, domContainer, id, cb);
   remoteContainer = remoteDOM.createContainer(id);
 });
 
@@ -98,6 +100,29 @@ it('node replaceChild', () => {
 });
 
 describe('initialization', () => {
+  describe('populateGlobalScope', () => {
+    it('should override window and document', () => {
+      expect(window).toBe(remoteDOM.window); // eslint-disable-line no-undef
+      expect(document).toBe(remoteDOM.document); // eslint-disable-line no-undef
+    });
+
+    it('should override Image', () => {
+      const width = 400;
+      const height = 500;
+      const img = new Image(width, height); // eslint-disable-line no-undef
+
+      remoteContainer.appendChild(img);
+
+      const remoteImg = domContainer.firstChild;
+      expect(img.tagName.toLowerCase()).toBe('img');
+      expect(img.width).toBe(width);
+      expect(img.height).toBe(height);
+      expect(remoteImg.tagName.toLowerCase()).toBe('img');
+      expect(remoteImg.width).toBe(width);
+      expect(remoteImg.height).toBe(height);
+    });
+  });
+
   it('should update remote window properties from actual local window on initialization', function () {
     const windowOverridesWithoutMethods = Object.assign({}, windowOverrides);
     delete windowOverridesWithoutMethods.addEventListener;
@@ -114,11 +139,15 @@ describe('initialization', () => {
     expect(env.jsdomDefaultView.window.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
   });
 
-  it('onInit registered handlers are invoked upon init', (done) => {
-    const remoteHandler = testUtils.setupRemote();
-    remoteDOM.onInit(() => {
-      done();
-    });
+  it('registered setChannel callbacks invoked upon handshake with remote', done => {
+    let remoteHandler;
+
+    remoteDOM.setChannel({
+      postMessage: function () {},
+      addEventListener: function (msgType, handler) {
+        remoteHandler = handler;
+      }
+    }, cb => cb()).then(done);
 
     remoteHandler({data: JSON.stringify({REMOTE_DOM: [[Constants.INIT, {}]]})});
   });
@@ -565,6 +594,32 @@ describe('messages arriving before a local container was created', () => {
       expect(clickMock).toHaveBeenCalled();
   });
 
+  it('addEventListener evt fields that contain a Window type objects should be replaced with null even if they represent another frame (message event)', () => {
+    const frame = env.jsdomDefaultView.document.createElement('iframe');
+    const listenerSpy = jest.fn();
+    const div = remoteDOM.document.createElement('div');
+    remoteContainer.appendChild(div);
+    domContainer.parentNode.appendChild(frame);
+    const evt = new env.jsdomDefaultView.window.CustomEvent('test-event', {
+      detail: 'bla'
+    });
+    const evtWithWindow = new env.jsdomDefaultView.window.CustomEvent('test-event-with-window', {
+      detail: frame.contentWindow
+    });
+    div.addEventListener('test-event', listenerSpy);
+    div.addEventListener('test-event-with-window', listenerSpy);
+
+    const localDiv = domContainer.children[0];
+    localDiv.dispatchEvent(evt);
+    localDiv.dispatchEvent(evtWithWindow);
+
+    expect(listenerSpy).toHaveBeenCalled();
+    expect(listenerSpy.mock.calls[0][0].type).toBe('test-event');
+    expect(listenerSpy.mock.calls[0][0].detail).toBe('bla');
+    expect(listenerSpy.mock.calls[1][0].type).toBe('test-event-with-window');
+    expect(listenerSpy.mock.calls[1][0].detail).toBe(null);
+  });
+
   it('removeEventListener should remove an event listener as soon as the local container is created', () => {
     const remoteContainer = remoteDOM.createContainer(testId);
       const clickMock = jest.fn();
@@ -603,3 +658,23 @@ describe('messages arriving before a local container was created', () => {
       expect(env.nativeInvocationMock).toHaveBeenCalled();
     });
   });
+
+describe('specifically implemented remote elements APIs', () => {
+  describe('input', () => {
+    it('input element should have value property directly', () => {
+      const input = remoteDOM.document.createElement('input');
+
+      expect(input.constructor.prototype.hasOwnProperty('value')).toBe(true);
+    });
+  });
+
+  describe('select', () => {
+    it('select element should have and options getter', () => {
+      const select = remoteDOM.document.createElement('select');
+      const option = remoteDOM.document.createElement('option');
+      select.appendChild(option);
+
+      expect(select.options).toEqual([option]);
+    });
+  });
+});
