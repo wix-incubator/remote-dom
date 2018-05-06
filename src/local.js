@@ -124,6 +124,13 @@ const messageHandlers = wrapAll({
     elements[msg[1]][Constants.NODE_INDEX] = msg[1];
     return true;
   },
+  [Commands.createElementNS]: (queueIndex, msg) => {    
+    const elements = elementsByQueue[queueIndex];
+    elements[msg[1]] = doc.createElementNS(msg[4], msg[2]);
+    elements[msg[1]][Constants.QUEUE_INDEX] = queueIndex;
+    elements[msg[1]][Constants.NODE_INDEX] = msg[1];
+    return true;
+  },
   [Commands.createTextNode]: (queueIndex, msg) => {
     const elements = elementsByQueue[queueIndex];
     elements[msg[1]] = doc.createTextNode(msg[2]);

@@ -22,6 +22,7 @@ const Node = {
 const Commands = {
   createContainer: 'createContainer',
   createElement: 'createElement',
+  createElementNS: 'createElementNS',
   createTextNode: 'createTextNode',
   createComment: 'createComment',
   createDocumentFragment: 'createDocumentFragment',

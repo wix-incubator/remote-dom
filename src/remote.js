@@ -397,6 +397,29 @@ function createElement (nodeName) {
   return res;
 }
 
+function createElementNS (namespace, nodeName) {
+  let res;
+  switch(nodeName) {
+    case 'video':
+      res = new RemoteVideo();
+      break;
+    case 'img':
+      res = new RemoteImage();
+      break;
+    case 'input':
+      res = new RemoteInput();
+      break;
+    case 'select':
+      res = new RemoteSelect();
+      break;
+    default:
+      res = new RemoteElement(nodeName);      
+      break;
+  }
+  addToQueue(Commands.createElementNS, res.$host, [res.$index, res.tagName, namespace]);
+  return res;
+}
+
 function createTextNode (text) {
   const res = new RemoteText(text);
   addToQueue(Commands.createTextNode, res.$host, [res.$index, text]);
@@ -523,14 +546,15 @@ function populateGlobalScope(scope) {
 }
 
 const document = {
-  createElement,
+  createElement,  
   createTextNode,
   createComment,
   createDocumentFragment,
   addEventListener: addEventListener.bind(null, Constants.DOCUMENT, null),
   removeEventListener: removeEventListener.bind(null, Constants.DOCUMENT, null),
   documentElement: new RemoteElement('html'),
-  dispatchEvent: dispatchEvent.bind(null, Constants.DOCUMENT, null)
+  dispatchEvent: dispatchEvent.bind(null, Constants.DOCUMENT, null),
+  createElementNS
 };
 
 SupportedEvents.forEach((e) => {
