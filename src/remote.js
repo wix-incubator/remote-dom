@@ -243,9 +243,9 @@ class RemoteText extends RemoteTextualNode {
 }
 
 class RemoteElement extends RemoteNode {
-  constructor (tagName) {
-    super(Node.ELEMENT_NODE);
-    this.tagName = tagName.toUpperCase();
+  constructor (tagName, isTagNameCaseSensitive) {
+    super(Node.ELEMENT_NODE);    
+    this.tagName = isTagNameCaseSensitive ? tagName : tagName.toUpperCase();
     this.$style = new RemoteStyle(this.$index);
     this.$attr = {};
   }
@@ -398,24 +398,7 @@ function createElement (nodeName) {
 }
 
 function createElementNS (namespace, nodeName) {
-  let res;
-  switch(nodeName) {
-    case 'video':
-      res = new RemoteVideo();
-      break;
-    case 'img':
-      res = new RemoteImage();
-      break;
-    case 'input':
-      res = new RemoteInput();
-      break;
-    case 'select':
-      res = new RemoteSelect();
-      break;
-    default:
-      res = new RemoteElement(nodeName);      
-      break;
-  }
+  const res = new RemoteElement(nodeName, true);
   addToQueue(Commands.createElementNS, res.$host, [res.$index, res.tagName, namespace]);
   return res;
 }
