@@ -25,7 +25,7 @@ describe('svg tests', () => {
       const attribute = "width";
       const localSvgNode = domContainer.firstChild;
       svgNode.setAttribute(attribute, value);
-      
+
       expect(localSvgNode.getAttribute(attribute)).toBe(value);      
       done();
     };
@@ -36,8 +36,7 @@ describe('svg tests', () => {
   it('should set add children', done => {
     
     const expectFunc = (svgNode) => {
-      const localSvgNode = domContainer.firstChild;
-      
+            
       expect(svgNode.tagName).toBe("svg");
       expect(svgNode.children[0].tagName).toBe("path");
       expect(svgNode.children[1].tagName).toBe("circle");
