@@ -243,9 +243,9 @@ class RemoteText extends RemoteTextualNode {
 }
 
 class RemoteElement extends RemoteNode {
-  constructor (tagName) {
-    super(Node.ELEMENT_NODE);
-    this.tagName = tagName.toUpperCase();
+  constructor (tagName, isTagNameCaseSensitive) {
+    super(Node.ELEMENT_NODE);    
+    this.tagName = isTagNameCaseSensitive ? tagName : tagName.toUpperCase();
     this.$style = new RemoteStyle(this.$index);
     this.$attr = {};
   }
@@ -397,6 +397,12 @@ function createElement (nodeName) {
   return res;
 }
 
+function createElementNS (namespace, nodeName) {
+  const res = new RemoteElement(nodeName, true);
+  addToQueue(Commands.createElementNS, res.$host, [res.$index, res.tagName, namespace]);
+  return res;
+}
+
 function createTextNode (text) {
   const res = new RemoteText(text);
   addToQueue(Commands.createTextNode, res.$host, [res.$index, text]);
@@ -523,14 +529,15 @@ function populateGlobalScope(scope) {
 }
 
 const document = {
-  createElement,
+  createElement,  
   createTextNode,
   createComment,
   createDocumentFragment,
   addEventListener: addEventListener.bind(null, Constants.DOCUMENT, null),
   removeEventListener: removeEventListener.bind(null, Constants.DOCUMENT, null),
   documentElement: new RemoteElement('html'),
-  dispatchEvent: dispatchEvent.bind(null, Constants.DOCUMENT, null)
+  dispatchEvent: dispatchEvent.bind(null, Constants.DOCUMENT, null),
+  createElementNS
 };
 
 SupportedEvents.forEach((e) => {
